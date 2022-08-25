@@ -61,3 +61,8 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# artistats
+.env
+/certificates/*.pem
+/src/assets/playlists.txt
