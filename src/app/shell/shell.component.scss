@@ -1,3 +1,5 @@
+@import "src/theme/theme-variables";
+
 :host {
   display: flex;
   flex: 1;
@@ -24,6 +26,27 @@
   }
 }
 
-.menu-button {
-  margin-right: 1rem;
+.mat-drawer-container {
+  position: unset;
+}
+
+.mat-sidenav,
+.mat-drawer-content,
+// Force style down to child components
+// See https://angular.io/guide/component-styles#deep
+:host ::ng-deep .mat-drawer-backdrop {
+  top: 64px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: auto;
+  position: absolute;
+}
+
+@media ($mat-xsmall) {
+  .mat-sidenav,
+  .mat-drawer-content,
+  :host ::ng-deep .mat-drawer-backdrop {
+    top: 56px;
+  }
 }

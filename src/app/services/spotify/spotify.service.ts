@@ -52,15 +52,15 @@ export class SpotifyService {
 
   // Login procedure
   public login() {
-    const SPOTIPY_CLIENT_ID = environment.spotifyApiKey;
-    const SPOTIPY_REDIRECT_URI = 'https://localhost:4200/redirect';
+    const spotifyClientId = environment.SPOTIFY_CLIENT_ID;
+    const spotifyRedirectUri = 'https://localhost:4200/redirect';
     const spotifyScope = 'playlist-read-private';
     const spotifyAuthEndpoint =
       'https://accounts.spotify.com/authorize?' +
       'client_id=' +
-      SPOTIPY_CLIENT_ID +
+      spotifyClientId +
       '&redirect_uri=' +
-      SPOTIPY_REDIRECT_URI +
+      spotifyRedirectUri +
       '&scope=' +
       spotifyScope +
       '&response_type=token&state=123';
