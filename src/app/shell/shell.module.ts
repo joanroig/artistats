@@ -8,6 +8,7 @@ import { AuthModule } from '@app/auth';
 import { I18nModule } from '@app/i18n';
 import { MaterialModule } from '@app/material.module';
 import { RedirectModule } from '@app/redirect/redirect.module';
+import { HeaderComponent } from './header/header.component';
 import { ShellComponent } from './shell.component';
 
 @NgModule({
@@ -21,6 +22,6 @@ import { ShellComponent } from './shell.component';
     I18nModule,
     RouterModule,
   ],
-  declarations: [ShellComponent],
+  declarations: [HeaderComponent, ShellComponent],
 })
 export class ShellModule {}

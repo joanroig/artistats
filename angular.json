@@ -146,5 +146,8 @@
       }
     }
   },
-  "defaultProject": "artistats"
+  "defaultProject": "artistats",
+  "cli": {
+    "analytics": false
+  }
 }

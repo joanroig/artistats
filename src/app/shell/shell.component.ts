@@ -1,40 +1,29 @@
-import { Title } from '@angular/platform-browser';
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { Breakpoints, BreakpointObserver } from '@angular/cdk/layout';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatSidenav } from '@angular/material/sidenav';
+import { filter } from 'rxjs/operators';
 
-import { AuthenticationService, CredentialsService } from '@app/auth';
+import { UntilDestroy, untilDestroyed } from '@shared';
 
+@UntilDestroy()
 @Component({
   selector: 'app-shell',
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss'],
 })
 export class ShellComponent implements OnInit {
-  constructor(
-    private router: Router,
-    private titleService: Title,
-    private authenticationService: AuthenticationService,
-    private credentialsService: CredentialsService,
-    private breakpoint: BreakpointObserver
-  ) {}
+  @ViewChild('sidenav', { static: false }) sidenav!: MatSidenav;
 
-  ngOnInit() {}
+  constructor(private breakpoint: BreakpointObserver) {}
 
-  logout() {
-    this.authenticationService.logout().subscribe(() => this.router.navigate(['/login'], { replaceUrl: true }));
-  }
-
-  get username(): string | null {
-    const credentials = this.credentialsService.credentials;
-    return credentials ? credentials.username : null;
-  }
-
-  get isMobile(): boolean {
-    return this.breakpoint.isMatched(Breakpoints.Small) || this.breakpoint.isMatched(Breakpoints.XSmall);
-  }
-
-  get title(): string {
-    return this.titleService.getTitle();
+  ngOnInit() {
+    // Automatically close side menu on screens > small breakpoint
+    this.breakpoint
+      .observe([Breakpoints.Small, Breakpoints.XSmall])
+      .pipe(
+        filter(({ matches }) => !matches),
+        untilDestroyed(this)
+      )
+      .subscribe(() => this.sidenav.close());
   }
 }
