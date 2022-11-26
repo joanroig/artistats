@@ -7,8 +7,12 @@
     </div>
   </div>
   <div class="login-container" fxLayout="row" fxLayoutAlign="center">
-    <mat-card fxFlex="90%" fxFlex.sm="66%" fxFlex.md="50%" fxFlex.gt-md="33%" class="login-box">
-      <form (ngSubmit)="login()" [formGroup]="loginForm" novalidate>
+    <!-- <mat-card fxFlex="90%" fxFlex.sm="66%" fxFlex.md="50%" fxFlex.gt-md="33%" class="login-box"> -->
+    <button mat-raised-button color="primary" style="height: 60px; width: 300px" (click)="login()">
+      SPOTIFY LOGIN
+    </button>
+
+    <!-- <form (ngSubmit)="login()" [formGroup]="loginForm" novalidate>
         <div class="login-error" [hidden]="!error || isLoading" translate>Username or password incorrect.</div>
         <br />
         <div class="login-fields" fxLayout="column">
@@ -45,7 +49,7 @@
             <span translate>Login</span>
           </button>
         </div>
-      </form>
-    </mat-card>
+      </form> -->
+    <!-- </mat-card> -->
   </div>
 </div>

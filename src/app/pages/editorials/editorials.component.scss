@@ -2,6 +2,17 @@
   text-align: center;
   padding: 1em;
 }
+
+// .logo {
+//   width: 150px;
+//   margin: 0 auto;
+// }
+
+// q {
+//   font-style: italic;
+//   quotes: "« " " »";
+// }
+
 .card {
   display: flex;
   align-items: center;
@@ -35,7 +46,31 @@
     border-bottom: 1px solid #ccc;
   }
 
-  .followers {
+  .job {
     font-size: 20px;
   }
+}
+
+table {
+  width: 100%;
+  text-align: left;
+}
+
+.counter {
+  margin-bottom: 20px;
+}
+
+.buttons {
+  margin-bottom: 20px;
+}
+
+.errors {
+  width: 100%;
+  mat-form-field {
+    width: 100%;
+    textarea {
+      height: 100px;
+    }
+  }
+  // margin-bottom: 20px;
 }

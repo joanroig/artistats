@@ -1,9 +1,8 @@
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatSidenav } from '@angular/material/sidenav';
-import { filter } from 'rxjs/operators';
 
-import { UntilDestroy, untilDestroyed } from '@shared';
+import { UntilDestroy } from '@shared';
 
 @UntilDestroy()
 @Component({
@@ -17,13 +16,13 @@ export class ShellComponent implements OnInit {
   constructor(private breakpoint: BreakpointObserver) {}
 
   ngOnInit() {
-    // Automatically close side menu on screens > small breakpoint
-    this.breakpoint
-      .observe([Breakpoints.Small, Breakpoints.XSmall])
-      .pipe(
-        filter(({ matches }) => !matches),
-        untilDestroyed(this)
-      )
-      .subscribe(() => this.sidenav.close());
+    // // Automatically close side menu on screens > small breakpoint
+    // this.breakpoint
+    //   .observe([Breakpoints.Small, Breakpoints.XSmall])
+    //   .pipe(
+    //     filter(({ matches }) => !matches),
+    //     untilDestroyed(this)
+    //   )
+    //   .subscribe(() => this.sidenav.close());
   }
 }
