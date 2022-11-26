@@ -5,6 +5,7 @@ import { Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Playlist } from '@app/models/playlist.model';
 import { ResourceType } from '@app/models/resource-type.model';
+import { DatabaseService } from '@app/services/database/database.service';
 import { SpotifyService } from '@app/services/spotify/spotify.service';
 import Utils from '@app/utils/Utils';
 
@@ -36,8 +37,9 @@ export class PlaylistAnalysisComponent implements OnInit {
     private httpClient: HttpClient,
     private spotifyService: SpotifyService,
     private clipboard: Clipboard,
-    private datepipe: DatePipe,
-    private snackBar: MatSnackBar
+    private datePipe: DatePipe,
+    private snackBar: MatSnackBar,
+    private databaseService: DatabaseService
   ) {}
 
   ngOnInit() {
@@ -62,21 +64,10 @@ export class PlaylistAnalysisComponent implements OnInit {
     this.spotifyService.init();
   }
 
-  login() {
-    this.spotifyService.login();
-  }
-
-  logout() {
-    this.clearData();
-    this.stopUpdate();
-    this.startupLoaded = false;
-    this.spotifyService.logout();
-  }
-
   copyDates() {
     let dates = '';
     Array.from(this.playlistData.values()).forEach((p) => {
-      dates += this.datepipe.transform(p.lastUpdate, 'dd/MM/yyyy') + '\n';
+      dates += this.datePipe.transform(p.lastUpdate, 'dd/MM/yyyy') + '\n';
     });
     this.clipboard.copy(dates);
     this.snackBar.open('Dates copied to the clipboard!', 'Close', {
