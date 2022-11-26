@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Playlist } from '@app/models/playlist.model';
 import * as localforage from 'localforage';
 
 @Injectable({
@@ -9,14 +10,11 @@ import * as localforage from 'localforage';
  * Documentation: https://github.com/localForage/localForage
  */
 export class DatabaseService {
-  store = localforage.createInstance({
-    name: 'artistats',
-  });
+  analysisPlaylistsStore = localforage.createInstance({ name: 'analysis-playlists' });
+  editorialPlaylistsStore = localforage.createInstance({ name: 'editorial-playlists' });
+  editorialTracksStore = localforage.createInstance({ name: 'editorial-tracks' });
 
-  constructor() {
-    // this.store.getItem('analysis-playlists');
-    this.store.setItem('analysis-playlists', {});
-    this.store.setItem('editorial-playlists', {});
-    this.store.setItem('editorial-tracks', {});
+  set(id: string, playlist: Playlist) {
+    this.analysisPlaylistsStore.setItem(id, playlist);
   }
 }

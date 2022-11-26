@@ -14,6 +14,7 @@ import { environment } from '@env/environment';
 import { ApiPrefixInterceptor, ErrorHandlerInterceptor, RouteReusableStrategy, SharedModule } from '@shared';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { AddDialogComponent } from './dialogs/add/add-dialog.component';
 import { HomeModule } from './pages/home/home.module';
 import { ShellModule } from './shell/shell.module';
 
@@ -34,7 +35,7 @@ import { ShellModule } from './shell/shell.module';
     Angulartics2Module.forRoot(),
     AppRoutingModule, // must be imported as the last module as it contains the fallback route
   ],
-  declarations: [AppComponent],
+  declarations: [AppComponent, AddDialogComponent],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,

@@ -3,6 +3,9 @@
     <mat-card-content>
       <mat-card-actions>
         <div class="buttons">
+          <button mat-raised-button color="primary" [disabled]="loading" (click)="addPlaylists()">
+            {{ 'ADD' }}
+          </button>
           <button mat-raised-button color="primary" (click)="loading ? stopUpdate() : updatePlaylists()">
             {{ loading ? 'STOP REFRESH' : 'REFRESH' }}
           </button>
