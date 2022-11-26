@@ -86,7 +86,7 @@ export class EditorialsComponent implements OnInit {
   copyFollowers() {
     let followers = '';
     Array.from(this.playlistData.values()).forEach((p) => {
-      followers += p.followers + '\n';
+      followers += p.followersCount + '\n';
     });
     this.clipboard.copy(followers);
     this.snackBar.open('Followers copied to the clipboard!', 'Close', {
@@ -197,8 +197,8 @@ export class EditorialsComponent implements OnInit {
             author: data.owner.display_name,
             playlistUrl: data.external_urls.spotify,
             authorUrl: data.owner.external_urls.spotify,
-            followers: data.followers.total,
-            tracks: data.tracks.total,
+            followersCount: data.followers.total,
+            tracksCount: data.tracks.total,
             lastUpdate,
           };
           this.playlistData.set(id, playlist);

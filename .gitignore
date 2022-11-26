@@ -67,3 +67,4 @@ Thumbs.db
 .env
 /certificates/*.pem
 /src/assets/*.txt
+.yarn

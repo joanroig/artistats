@@ -5,7 +5,7 @@ export interface Playlist {
   author?: string;
   playlistUrl?: string;
   authorUrl?: string;
-  followers?: number;
-  tracks?: number;
+  followersCount?: number;
+  tracksCount?: number;
   lastUpdate?: Date;
 }

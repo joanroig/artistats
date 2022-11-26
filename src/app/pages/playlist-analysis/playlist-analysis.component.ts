@@ -6,6 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Playlist } from '@app/models/playlist.model';
 import { ResourceType } from '@app/models/resource-type.model';
 import { DatabaseService } from '@app/services/database/database.service';
+import { DialogService } from '@app/services/dialog/dialog.service';
 import { SpotifyService } from '@app/services/spotify/spotify.service';
 import Utils from '@app/utils/Utils';
 
@@ -39,7 +40,8 @@ export class PlaylistAnalysisComponent implements OnInit {
     private clipboard: Clipboard,
     private datePipe: DatePipe,
     private snackBar: MatSnackBar,
-    private databaseService: DatabaseService
+    private databaseService: DatabaseService,
+    private dialogService: DialogService
   ) {}
 
   ngOnInit() {
@@ -78,14 +80,16 @@ export class PlaylistAnalysisComponent implements OnInit {
   copyFollowers() {
     let followers = '';
     Array.from(this.playlistData.values()).forEach((p) => {
-      followers += p.followers + '\n';
+      followers += p.followersCount + '\n';
     });
     this.clipboard.copy(followers);
     this.snackBar.open('Followers copied to the clipboard!', 'Close', {
       duration: 1000,
     });
   }
-
+  addPlaylists() {
+    this.dialogService.openAddDialog();
+  }
   stopUpdate() {
     this.stop = true;
   }
@@ -190,8 +194,8 @@ export class PlaylistAnalysisComponent implements OnInit {
             author: data.owner.display_name,
             playlistUrl: data.external_urls.spotify,
             authorUrl: data.owner.external_urls.spotify,
-            followers: data.followers.total,
-            tracks: data.tracks.total,
+            followersCount: data.followers.total,
+            tracksCount: data.tracks.total,
             lastUpdate,
           };
           this.playlistData.set(id, playlist);
