@@ -66,4 +66,4 @@ Thumbs.db
 # artistats
 .env
 /certificates/*.pem
-/src/assets/playlists.txt
+/src/assets/*.txt

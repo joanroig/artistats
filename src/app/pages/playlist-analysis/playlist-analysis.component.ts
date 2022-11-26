@@ -3,19 +3,10 @@ import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Playlist } from '@app/models/playlist.model';
+import { ResourceType } from '@app/models/resource-type.model';
 import { SpotifyService } from '@app/services/spotify/spotify.service';
-
-export interface Playlist {
-  num: number;
-  id: string;
-  name: string;
-  author?: string;
-  playlistUrl?: string;
-  authorUrl?: string;
-  followers?: number;
-  tracks?: number;
-  lastUpdate?: Date;
-}
+import Utils from '@app/utils/Utils';
 
 @Component({
   selector: 'app-playlist-analysis',
@@ -111,7 +102,7 @@ export class PlaylistAnalysisComponent implements OnInit {
   async updatePlaylists() {
     this.clearData();
 
-    this.httpClient.get('./assets/playlists.txt', { responseType: 'text' }).subscribe({
+    this.httpClient.get('./assets/playlists-analysis.txt', { responseType: 'text' }).subscribe({
       next: (ids) => {
         // Reset playlist ids
         this.playlistIds = [];
@@ -123,7 +114,14 @@ export class PlaylistAnalysisComponent implements OnInit {
         playlistStrings = playlistStrings.filter((n) => n);
 
         // Get all playlist ids from the strings
-        this.playlistIds = this.parseSpotifyIds(playlistStrings);
+        let res = Utils.parseSpotifyIds(playlistStrings, ResourceType.playlist);
+        this.playlistIds = res.ids;
+        if (res.errors.length > 0) {
+          res.errors.forEach((error) => {
+            console.error(error);
+            this.errors += error + '\n';
+          });
+        }
 
         // Get data of all playlists
         this.getPlaylistData();
@@ -221,51 +219,6 @@ export class PlaylistAnalysisComponent implements OnInit {
     }
 
     this.loading = false;
-  }
-
-  private parseSpotifyIds(playlistStrings: string[]): string[] {
-    let ids: string[] = [];
-    // Get IDs from each playlist (url, uri or id)
-    playlistStrings.forEach((str) => {
-      let id = undefined;
-
-      // Direct ID
-      if (str.length === 22) {
-        id = str;
-      }
-      // URI
-      else if (str.startsWith('spotify:playlist:')) {
-        const s = str.split(':')[2];
-        if (s.length !== 22) {
-          console.error('Incorrect Spotify URI ' + str);
-          this.errors += 'Incorrect Spotify URI ' + str + '\n';
-        } else {
-          id = s;
-        }
-      }
-      // URL with or without query params
-      else if (str.includes('open.spotify.com/playlist/')) {
-        let s = str.split('open.spotify.com/playlist/')[1];
-        if (str.includes('?')) {
-          s = s.split('?')[0];
-        }
-        if (s.length < 22) {
-          console.error('Incorrect Spotify URL ' + str);
-          this.errors += 'Incorrect Spotify URL ' + str + '\n';
-        } else {
-          id = s.slice(0, 22);
-        }
-      } else {
-        console.error('Incorrect playlist string ' + str);
-        this.errors += 'Incorrect playlist string ' + str + '\n';
-      }
-
-      // Add ID if it was found
-      if (id) {
-        ids.push(id);
-      }
-    });
-    return ids;
   }
 
   private clearData() {
