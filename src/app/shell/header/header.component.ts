@@ -1,7 +1,7 @@
-import { Title } from '@angular/platform-browser';
-import { Component, OnInit, Input } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, Input, OnInit } from '@angular/core';
 import { MatSidenav } from '@angular/material/sidenav';
+import { Title } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 
 import { AuthenticationService, CredentialsService } from '@app/auth';
 
@@ -23,7 +23,9 @@ export class HeaderComponent implements OnInit {
   ngOnInit() {}
 
   logout() {
-    this.authenticationService.logout().subscribe(() => this.router.navigate(['/login'], { replaceUrl: true }));
+    this.authenticationService.logout().subscribe(() => {
+      this.router.navigate(['/login'], { replaceUrl: true });
+    });
   }
 
   get username(): string | null {

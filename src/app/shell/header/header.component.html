@@ -6,10 +6,18 @@
     <span class="title">{{ title }}</span>
   </div>
   <div fxHide.lt-md>
-    <a class="brand" href="https://github.com/ngx-rocket" translate>APP_NAME</a>
+    <a class="brand" routerLink="/home" translate>APP_NAME</a>
     <button mat-button routerLink="/home" routerLinkActive="active">
       <mat-icon>home</mat-icon>
       <span translate>Home</span>
+    </button>
+    <button mat-button routerLink="/playlistanalysis" routerLinkActive="active">
+      <mat-icon>analytics</mat-icon>
+      <span translate>Playlist Analysis</span>
+    </button>
+    <button mat-button routerLink="/editorials" routerLinkActive="active">
+      <mat-icon>verified</mat-icon>
+      <span translate>Editorials</span>
     </button>
     <button mat-button routerLink="/about" routerLinkActive="active">
       <mat-icon>info</mat-icon>
@@ -22,12 +30,10 @@
     <mat-icon>person</mat-icon>
   </button>
   <mat-menu #userMenu="matMenu">
-    <mat-list>
-      <mat-list-item>
-        <span translate>Logged in as</span>&nbsp;<b>{{ username }}</b>
-      </mat-list-item>
-      <mat-divider></mat-divider>
-    </mat-list>
+    <button mat-menu-item routerLink="/home">
+      <span translate>Logged in as</span>&nbsp;<strong>{{ username }}</strong>
+    </button>
+    <mat-divider></mat-divider>
     <button mat-menu-item (click)="logout()" translate>Logout</button>
   </mat-menu>
 </mat-toolbar>

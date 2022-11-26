@@ -1,0 +1,108 @@
+<div class="container">
+  <mat-card>
+    <mat-card-content>
+      <mat-card-actions>
+        <div *ngIf="loginStatus === false">
+          <button mat-raised-button (click)="login()">SPOTIFY LOGIN</button>
+        </div>
+
+        <div *ngIf="loginStatus === true">
+          <!-- <div class="card">
+            <img class="image" alt="profile image" [src]="userData?.images[0].url" />
+            <div>
+              <div class="name">
+                <a [href]="userData?.href">{{ userData?.display_name }}</a>
+              </div>
+              <div class="job">Followers:{{ userData?.followers.total }}</div>
+            </div>
+          </div> -->
+
+          <div class="counter">
+            <b> Total playlists: {{ dataSource.length }}</b>
+          </div>
+
+          <div class="buttons">
+            <button mat-raised-button color="primary" (click)="loading ? stopUpdate() : updatePlaylists()">
+              {{ loading ? 'STOP REFRESH' : 'REFRESH' }}
+            </button>
+            <button mat-raised-button [disabled]="loading" (click)="copyDates()">
+              {{ 'COPY DATES' }}
+            </button>
+            <button mat-raised-button [disabled]="loading" (click)="copyFollowers()">
+              {{ 'COPY FOLLOWERS' }}
+            </button>
+            <!-- <button mat-raised-button (click)="logout()">LOGOUT</button> -->
+          </div>
+
+          <div class="errors" *ngIf="errors">
+            <mat-form-field class="example-full-width" appearance="fill">
+              <mat-label>Errors</mat-label>
+              <textarea matInput placeholder="Errors" readonly>{{ errors }}</textarea>
+            </mat-form-field>
+          </div>
+
+          <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+            <!--- Note that these columns can be defined in any order.
+                  The actual rendered columns are set as a property on the row definition" -->
+
+            <ng-container matColumnDef="num">
+              <th mat-header-cell *matHeaderCellDef>#</th>
+              <td mat-cell *matCellDef="let element">{{ element.num }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let element">
+                <a
+                  mat-icon-button
+                  target="_blank"
+                  [href]="element.playlistUrl"
+                  color="primary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <mat-icon>link</mat-icon>
+                </a>
+                {{ element.name }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="author">
+              <th mat-header-cell *matHeaderCellDef>Author</th>
+              <td mat-cell *matCellDef="let element">
+                <a
+                  mat-raised-button
+                  target="_blank"
+                  [href]="element.authorUrl"
+                  color="primary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ element.author }}
+                </a>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="followers">
+              <th mat-header-cell *matHeaderCellDef>Followers</th>
+              <td mat-cell *matCellDef="let element">{{ element.followers }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="tracks">
+              <th mat-header-cell *matHeaderCellDef>Tracks</th>
+              <td mat-cell *matCellDef="let element">{{ element.tracks }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="lastUpdate">
+              <th mat-header-cell *matHeaderCellDef>Last Update</th>
+              <td mat-cell *matCellDef="let element">{{ element.lastUpdate | date }}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+      </mat-card-actions>
+    </mat-card-content>
+  </mat-card>
+</div>
