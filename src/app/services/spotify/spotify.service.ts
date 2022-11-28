@@ -1,8 +1,12 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { environment } from '@env/environment';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { DbId } from '@app/models/db-id.model';
+import { ModeType } from '@app/models/mode-type.model';
+import { Playlist } from '@app/models/playlist.model';
+import { Track } from '@app/models/track.model';
 import { Subject } from 'rxjs';
 import SpotifyWebApi from 'spotify-web-api-js';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable({
   providedIn: 'root',
@@ -12,107 +16,254 @@ import SpotifyWebApi from 'spotify-web-api-js';
  * Documentation: https://github.com/jmperez/spotify-web-api-js
  */
 export class SpotifyService {
-  private spotifyApi: SpotifyWebApi.SpotifyWebApiJs;
-  private token?: string | null;
+  public spotifyApi: SpotifyWebApi.SpotifyWebApiJs;
+  public token?: string | null;
+  private throttleMillis = 25;
+  private stop = false;
 
-  private loginStatus = new Subject<boolean>();
-  private userData = new Subject<object>();
+  private fetchLogNotifier = new Subject<string>();
+  private errorLogNotifier = new Subject<string>();
 
-  constructor(private httpClient: HttpClient) {
+  constructor(private databaseService: DatabaseService, private snackBar: MatSnackBar) {
     this.spotifyApi = new SpotifyWebApi();
   }
 
-  // Initialize the API connection
-  init() {
-    const previousToken = localStorage.getItem('accessToken');
-    if (typeof previousToken === 'string' && previousToken.length !== 0) {
-      this.setToken(previousToken);
-      this.setUserData();
-    } else {
-      console.error('No previous token available');
-      this.logout();
-    }
+  // Return an observable to notify about fetching status
+  public getFetchLogUpdates() {
+    return this.fetchLogNotifier.asObservable();
   }
 
-  // Return an observable to notify about the login status
-  public loginStatusUpdate() {
-    return this.loginStatus.asObservable();
+  // Return an observable to notify about fetching status
+  public getFetchErrorUpdates() {
+    return this.errorLogNotifier.asObservable();
   }
 
-  // Return an observable to notify about user data changes
-  public userDataUpdate() {
-    return this.userData.asObservable();
+  stopUpdate() {
+    this.stop = true;
   }
 
-  // Remove the access token of the current user
-  public logout() {
-    localStorage.removeItem('accessToken');
-    this.loginStatus.next(false);
+  private appendErrorLog(log: string) {
+    this.errorLogNotifier.next(log);
   }
 
-  // Login procedure
-  public login() {
-    const spotifyClientId = environment.SPOTIFY_CLIENT_ID;
-    const spotifyRedirectUri = 'https://localhost:4200/redirect';
-    const spotifyScope = 'playlist-read-private';
-    const spotifyAuthEndpoint =
-      'https://accounts.spotify.com/authorize?' +
-      'client_id=' +
-      spotifyClientId +
-      '&redirect_uri=' +
-      spotifyRedirectUri +
-      '&scope=' +
-      spotifyScope +
-      '&response_type=token&state=123';
+  async insertTracks(trackIds: string[], mode: ModeType, dbId: DbId) {
+    this.stop = false;
+    let failed = [];
+    let index = 0;
 
-    // Open login window
-    window.open(spotifyAuthEndpoint, 'callBackWindow', 'height=500,width=400');
+    for (const id of trackIds) {
+      index++;
 
-    //This event listener will trigger once your callback page adds the token to localStorage
-    window.addEventListener('storage', (event) => {
-      if (event.key == 'accessToken') {
-        const token = event.newValue;
-        if (token) {
-          this.setToken(token);
-          this.setUserData();
+      // Stop if requested
+      if (this.stop) {
+        this.stop = false;
+        // this.isLoading = false;
+        this.appendErrorLog('Stopped by the user');
+        for (let i = index; i < trackIds.length; i++) {
+          let skipped = trackIds[i];
+          this.appendErrorLog('Skipped ' + skipped);
+          failed.push(skipped);
+        }
+
+        break;
+      }
+
+      let prevTrack = (await this.databaseService.get(id, dbId)) as Track;
+
+      // Print step
+      switch (mode) {
+        case ModeType.new:
+          this.fetchLogNotifier.next(`Processing ${index} of  ${trackIds.length} : ${id}`);
+          break;
+
+        case ModeType.update:
+          if (prevTrack) {
+            this.fetchLogNotifier.next(
+              `Updating ${index} of  ${trackIds.length} : "${prevTrack.name}" by ${prevTrack.artists.join(', ')}`
+            );
+          } else {
+            this.appendErrorLog('[insertTracks] Database inconsistency! Check with the admin the id: ' + id);
+          }
+          break;
+
+        default:
+          break;
+      }
+
+      if (mode === ModeType.new) {
+        // Skip if already processed
+        if (prevTrack) {
+          this.appendErrorLog('Skipped repeated track ' + id);
+          // No need to add to the withError objects as the playlist is already processed
+          continue;
         }
       }
-    });
-  }
 
-  // Save the token to be used in subsequent requests
-  setToken(token: string) {
-    // console.warn(token);
-    this.token = token;
-    this.spotifyApi.setAccessToken(token);
-    this.loginStatus.next(true);
-  }
+      // Fetch data
+      await this.spotifyApi.getTrack(id).then(
+        async (data) => {
+          let track: Track = { ...data, featuredOn: [] };
+          await this.databaseService.setTrack(id, track, dbId);
+        },
+        (error: any) => {
+          this.appendErrorLog('Problem fetching track ' + id + ' - ' + error.status);
+          failed.push(id);
+          if (error.status === 401) {
+            if (error.status === 401) {
+              this.snackBar.open('Token expired, go to user menu and press "Refresh token"', 'OK', {
+                duration: 5000,
+              });
+            }
+          }
+        }
+      );
 
-  // Save the token to be used in subsequent requests
-  setUserData() {
-    this.httpClient
-      .get('https://api.spotify.com/v1/me', {
-        headers: { Authorization: 'Bearer ' + this.token },
-      })
-      .subscribe({
-        next: (user) => {
-          this.userData.next(user);
-          this.loginStatus.next(true);
-        },
-        error: (e) => {
-          console.error('Token expired ' + e);
-          this.loginStatus.next(false);
-        },
-      });
+      // Throttle fetch
+      await this.delay(this.throttleMillis);
+    }
+
+    this.fetchLogNotifier.next('');
+    return failed;
   }
 
   // Get playlist details
-  async getPlaylistData(id: string) {
-    return this.spotifyApi.getPlaylist(id);
+  async insertPlaylists(playlistIds: string[], mode: ModeType, dbId: DbId) {
+    this.stop = false;
+    let failed = [];
+    let index = 0;
+
+    for (const id of playlistIds) {
+      index++;
+
+      // Stop if requested
+      if (this.stop) {
+        this.stop = false;
+        // this.isLoading = false;
+        this.appendErrorLog('Stopped by the user');
+        for (let i = index; i < playlistIds.length; i++) {
+          let skipped = playlistIds[i];
+          this.appendErrorLog('Skipped ' + skipped);
+          failed.push(skipped);
+        }
+
+        break;
+      }
+
+      let prevPlaylist = (await this.databaseService.get(id, dbId)) as Playlist;
+
+      // Print step
+      switch (mode) {
+        case ModeType.new:
+          this.fetchLogNotifier.next(`Processing ${index} of  ${playlistIds.length} : ${id}`);
+          break;
+
+        case ModeType.update:
+          if (prevPlaylist) {
+            this.fetchLogNotifier.next(
+              `Updating ${index} of  ${playlistIds.length} : "${prevPlaylist.name}" by ${prevPlaylist.author}`
+            );
+          } else {
+            this.appendErrorLog('[insertPlaylists] Database inconsistency! Check with the admin the id: ' + id);
+          }
+          break;
+
+        default:
+          break;
+      }
+
+      if (mode === ModeType.new) {
+        // Skip if already processed
+        if (prevPlaylist) {
+          this.appendErrorLog('Skipped repeated playlist ' + id);
+          // No need to add to the withError objects as the playlist is already processed
+          continue;
+        }
+      }
+
+      // Fetch data
+      await this.spotifyApi.getPlaylist(id).then(
+        async (data) => {
+          let tracks = data.tracks.items;
+
+          // Get the rest of the tracks if needed
+          if (data.tracks.next) {
+            let offset = data.tracks.offset;
+            let limit = 50;
+            let morePages = true;
+            while (morePages) {
+              // Throttle fetch
+              await this.delay(this.throttleMillis);
+              await this.getPlaylistPage(id, offset, limit).then(
+                (pageData) => {
+                  offset += limit;
+                  tracks = tracks.concat(pageData.items);
+                  if (!pageData.next) {
+                    morePages = false;
+                  }
+                },
+                (error) => {
+                  this.appendErrorLog('Problem fetching playlist ' + id + ' - ' + error.status);
+                  morePages = false;
+                  failed.push(id);
+                }
+              );
+            }
+          }
+
+          // Calculate playlist last update
+          let lastUpdate = new Date('1970-01-01T01:01:01Z');
+          tracks.forEach((track) => {
+            const d = new Date(track.added_at);
+            if (d > lastUpdate) {
+              lastUpdate = d;
+            }
+          });
+
+          const playlist: Playlist = {
+            id,
+            position: prevPlaylist?.position,
+            name: data.name,
+            lastFetch: new Date(),
+            author: data.owner.display_name,
+            playlistUrl: data.external_urls.spotify,
+            authorUrl: data.owner.external_urls.spotify,
+            followersCount: data.followers.total,
+            tracksCount: data.tracks.total,
+            lastUpdate,
+          };
+
+          // Add all track data
+          if (dbId === DbId.editorials_playlists) {
+            playlist.tracks = tracks;
+          }
+
+          await this.databaseService.setPlaylist(id, playlist, dbId);
+        },
+        (error: any) => {
+          this.appendErrorLog('Problem fetching playlist ' + id + ' - ' + error.status);
+          failed.push(id);
+          if (error.status === 401) {
+            if (error.status === 401) {
+              this.snackBar.open('Token expired, go to user menu and press "Refresh token"', 'OK', {
+                duration: 5000,
+              });
+            }
+          }
+        }
+      );
+
+      // Throttle fetch
+      await this.delay(this.throttleMillis);
+    }
+
+    this.fetchLogNotifier.next('');
+    return failed;
   }
 
   // Get playlist tracks page
   async getPlaylistPage(id: string, offset: number, limit: number) {
     return this.spotifyApi.getPlaylistTracks(id, { offset, limit });
   }
+
+  delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 }

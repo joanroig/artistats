@@ -5,16 +5,15 @@ import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouteReuseStrategy, RouterModule } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
-import { TranslateModule } from '@ngx-translate/core';
-import { Angulartics2Module } from 'angulartics2';
-import { MaterialModule } from './material.module';
-
 import { AuthModule } from '@app/auth';
 import { environment } from '@env/environment';
+import { TranslateModule } from '@ngx-translate/core';
 import { ApiPrefixInterceptor, ErrorHandlerInterceptor, RouteReusableStrategy, SharedModule } from '@shared';
+import { Angulartics2Module } from 'angulartics2';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AddDialogComponent } from './dialogs/add/add-dialog.component';
+import { MaterialModule } from './material.module';
 import { HomeModule } from './pages/home/home.module';
 import { ShellModule } from './shell/shell.module';
 

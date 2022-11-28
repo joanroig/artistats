@@ -1,0 +1,14 @@
+<mat-form-field class="output" appearance="outline" floatLabel="always">
+  <mat-label>Log</mat-label>
+  <input matInput placeholder="Waiting for events..." [value]="fetchLog" readonly />
+</mat-form-field>
+
+<div class="errors" *ngIf="errors">
+  <mat-form-field class="example-full-width" appearance="fill" color="warn" class="mat-focused" required>
+    <mat-label>Errors</mat-label>
+    <textarea matInput placeholder="Errors" readonly>{{ errors }}</textarea>
+    <button mat-icon-button class="clear" (click)="errors = ''">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+</div>

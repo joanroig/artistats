@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthenticationService } from '@app/auth/authentication.service';
-import { SpotifyService } from '@app/services/spotify/spotify.service';
 import { environment } from '@env/environment';
 import { Logger, UntilDestroy } from '@shared';
 
@@ -27,73 +26,48 @@ export class LoginComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     // private formBuilder: FormBuilder,
-    private authenticationService: AuthenticationService,
-    private spotifyService: SpotifyService
+    private authenticationService: AuthenticationService // private spotifyService: SpotifyService
   ) {
     // this.createForm();
   }
 
   ngOnInit() {
-    this.spotifyService.loginStatusUpdate().subscribe((loginStatus) => {
-      this.loginStatus = loginStatus;
-    });
-    // Get all user data updates
-    let userDataSub = this.spotifyService.userDataUpdate().subscribe((userData) => {
-      this.userData = userData;
-      if (this.loginStatus === true) {
-        // Unsubscribe to stop getting updates
-        userDataSub.unsubscribe();
-        // Save
-        this.authenticationService.login({
-          username: this.userData.display_name,
-        });
-        this.router.navigate([this.route.snapshot.queryParams['redirect'] || '/'], { replaceUrl: true });
-      }
-    });
-
-    // Start the Spotify service
-    this.spotifyService.init();
+    // this.spotifyService.getLoginStatusUpdate().subscribe((loginStatus) => {
+    //   this.loginStatus = loginStatus;
+    // });
+    // // Get all user data updates
+    // let userDataSub = this.spotifyService.userDataUpdate().subscribe((userData) => {
+    //   this.userData = userData;
+    //   if (this.loginStatus === true) {
+    //     // Unsubscribe to stop getting updates
+    //     userDataSub.unsubscribe();
+    //     // Save
+    //     this.authenticationService.login({
+    //       username: this.userData.display_name,
+    //     });
+    //     this.router.navigate([this.route.snapshot.queryParams['redirect'] || '/'], { replaceUrl: true });
+    //   }
+    // });
+    // // Start the Spotify service
+    // this.spotifyService.init();
   }
 
   login() {
-    this.spotifyService.login();
+    this.isLoading = true;
+    this.authenticationService.login().then(
+      (result) => {
+        this.isLoading = false;
+        this.router.navigate([this.route.snapshot.queryParams['redirect'] || '/'], { replaceUrl: true });
+      },
+      (err) => {
+        this.isLoading = false;
+
+        /* handles errors */
+      }
+    );
   }
 
   logout() {
-    // this.clearData();
-    // this.stopUpdate();
-    // this.startupLoaded = false;
-    this.spotifyService.logout();
+    this.authenticationService.logout();
   }
-
-  // login() {
-  //   this.isLoading = true;
-  //   const login$ = this.authenticationService.login(this.loginForm.value);
-  //   login$
-  //     .pipe(
-  //       finalize(() => {
-  //         this.loginForm.markAsPristine();
-  //         this.isLoading = false;
-  //       }),
-  //       untilDestroyed(this)
-  //     )
-  //     .subscribe(
-  //       (credentials) => {
-  //         log.debug(`${credentials.username} successfully logged in`);
-  //         this.router.navigate([this.route.snapshot.queryParams['redirect'] || '/'], { replaceUrl: true });
-  //       },
-  //       (error) => {
-  //         log.debug(`Login error: ${error}`);
-  //         this.error = error;
-  //       }
-  //     );
-  // }
-
-  // private createForm() {
-  //   this.loginForm = this.formBuilder.group({
-  //     username: ['', Validators.required],
-  //     password: ['', Validators.required],
-  //     remember: true,
-  //   });
-  // }
 }

@@ -2,7 +2,7 @@ import { TestBed, inject } from '@angular/core/testing';
 
 import { CredentialsService, Credentials } from './credentials.service';
 
-const credentialsKey = 'credentials';
+const credentialsKey = 'accessToken';
 
 describe('CredentialsService', () => {
   let credentialsService: CredentialsService;

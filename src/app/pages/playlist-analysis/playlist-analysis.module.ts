@@ -4,6 +4,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { TranslateModule } from '@ngx-translate/core';
 import { Angulartics2Module } from 'angulartics2';
 
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { MaterialModule } from '@app/material.module';
 import { SharedModule } from '@shared';
@@ -19,6 +20,7 @@ import { PlaylistAnalysisComponent } from './playlist-analysis.component';
     MaterialModule,
     FormsModule,
     Angulartics2Module,
+    DragDropModule,
     PlaylistAnalysisRoutingModule,
   ],
   declarations: [PlaylistAnalysisComponent],

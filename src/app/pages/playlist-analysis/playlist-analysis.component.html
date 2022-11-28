@@ -3,35 +3,43 @@
     <mat-card-content>
       <mat-card-actions>
         <div class="buttons">
-          <button mat-raised-button color="primary" [disabled]="loading" (click)="addPlaylists()">
-            {{ 'ADD' }}
+          <button mat-raised-button color="accent" [disabled]="isLoading" (click)="addPlaylists()">
+            {{ 'ADD PLAYLISTS' }}
           </button>
-          <button mat-raised-button color="primary" (click)="loading ? stopUpdate() : updatePlaylists()">
-            {{ loading ? 'STOP REFRESH' : 'REFRESH' }}
+          <button mat-raised-button color="primary" (click)="isLoading ? stopUpdate() : updatePlaylists()">
+            {{ isLoading ? 'STOP REFRESH' : 'REFRESH' }}
           </button>
-          <button mat-raised-button [disabled]="loading" (click)="copyDates()">
+          <button mat-raised-button [disabled]="isLoading" (click)="copyDates()">
             {{ 'COPY DATES' }}
           </button>
-          <button mat-raised-button [disabled]="loading" (click)="copyFollowers()">
+          <button mat-raised-button [disabled]="isLoading" (click)="copyFollowers()">
             {{ 'COPY FOLLOWERS' }}
           </button>
-          <!-- <button mat-raised-button (click)="logout()">LOGOUT</button> -->
         </div>
 
-        <div class="errors" *ngIf="errors">
-          <mat-form-field class="example-full-width" appearance="fill">
-            <mat-label>Errors</mat-label>
-            <textarea matInput placeholder="Errors" readonly>{{ errors }}</textarea>
-          </mat-form-field>
-        </div>
+        <app-output></app-output>
 
-        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+        <table
+          mat-table
+          #table
+          [dataSource]="dataSource"
+          cdkDropList
+          (cdkDropListDropped)="reorderTable($event)"
+          class="mat-elevation-z1"
+        >
           <!--- Note that these columns can be defined in any order.
                   The actual rendered columns are set as a property on the row definition" -->
 
-          <ng-container matColumnDef="num">
-            <th mat-header-cell *matHeaderCellDef>#</th>
-            <td mat-cell *matCellDef="let element">{{ element.num }}</td>
+          <ng-container matColumnDef="reorder">
+            <th mat-header-cell style="width: 80px" *matHeaderCellDef>Reorder</th>
+            <td mat-cell *matCellDef="let position">
+              <mat-icon class="grabbable" color="accent" cdkDragHandle>reorder</mat-icon>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="position">
+            <th mat-header-cell style="width: 42px" *matHeaderCellDef>#</th>
+            <td mat-cell *matCellDef="let index = index">{{ index + 1 }}</td>
           </ng-container>
 
           <ng-container matColumnDef="name">
@@ -70,12 +78,17 @@
 
           <ng-container matColumnDef="followers">
             <th mat-header-cell *matHeaderCellDef>Followers</th>
-            <td mat-cell *matCellDef="let element">{{ element.followers }}</td>
+            <td mat-cell *matCellDef="let element">{{ element.followersCount }}</td>
           </ng-container>
 
           <ng-container matColumnDef="tracks">
             <th mat-header-cell *matHeaderCellDef>Tracks</th>
-            <td mat-cell *matCellDef="let element">{{ element.tracks }}</td>
+            <td mat-cell *matCellDef="let element">{{ element.tracksCount }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="lastFetch">
+            <th mat-header-cell *matHeaderCellDef>Last Fetch</th>
+            <td mat-cell *matCellDef="let element">{{ element.lastFetch | date }}</td>
           </ng-container>
 
           <ng-container matColumnDef="lastUpdate">
@@ -83,8 +96,24 @@
             <td mat-cell *matCellDef="let element">{{ element.lastUpdate | date }}</td>
           </ng-container>
 
+          <ng-container matColumnDef="delete">
+            <th mat-header-cell style="width: 15px" *matHeaderCellDef>Delete</th>
+            <td mat-cell *matCellDef="let element">
+              <button *ngIf="!isLoading" mat-icon-button color="accent" (click)="delete(element)">
+                <mat-icon>delete</mat-icon>
+              </button>
+              <app-loader *ngIf="isLoading" class="inline-loader" [isLoading]="isLoading"></app-loader>
+            </td>
+          </ng-container>
+
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: displayedColumns"
+            cdkDrag
+            [cdkDragData]="row"
+            [cdkDragDisabled]="isLoading"
+          ></tr>
         </table>
       </mat-card-actions>
     </mat-card-content>

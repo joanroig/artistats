@@ -2,106 +2,223 @@
   <mat-card>
     <mat-card-content>
       <mat-card-actions>
-        <div *ngIf="loginStatus === false">
-          <button mat-raised-button (click)="login()">SPOTIFY LOGIN</button>
+        <div class="buttons">
+          <button mat-raised-button color="accent" [disabled]="isLoading" (click)="addPlaylists()">
+            {{ 'ADD PLAYLISTS' }}
+          </button>
+          <button mat-raised-button color="accent" [disabled]="isLoading" (click)="addTracks()">
+            {{ 'ADD TRACKS' }}
+          </button>
+          <button mat-raised-button color="primary" (click)="isLoading ? stopUpdate() : updatePlaylists()">
+            {{ isLoading ? 'STOP REFRESH' : 'REFRESH' }}
+          </button>
         </div>
 
-        <div *ngIf="loginStatus === true">
-          <!-- <div class="card">
-            <img class="image" alt="profile image" [src]="userData?.images[0].url" />
-            <div>
-              <div class="name">
-                <a [href]="userData?.href">{{ userData?.display_name }}</a>
-              </div>
-              <div class="job">Followers:{{ userData?.followers.total }}</div>
-            </div>
-          </div> -->
+        <app-output></app-output>
 
-          <div class="counter">
-            <b> Total playlists: {{ dataSource.length }}</b>
-          </div>
+        <mat-accordion>
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title>Playlist editor</mat-panel-title>
+              <mat-panel-description>Total Playlists: {{ playlists.length }}</mat-panel-description>
+            </mat-expansion-panel-header>
 
-          <div class="buttons">
-            <button mat-raised-button color="primary" (click)="loading ? stopUpdate() : updatePlaylists()">
-              {{ loading ? 'STOP REFRESH' : 'REFRESH' }}
-            </button>
-            <button mat-raised-button [disabled]="loading" (click)="copyDates()">
-              {{ 'COPY DATES' }}
-            </button>
-            <button mat-raised-button [disabled]="loading" (click)="copyFollowers()">
-              {{ 'COPY FOLLOWERS' }}
-            </button>
-            <!-- <button mat-raised-button (click)="logout()">LOGOUT</button> -->
-          </div>
-
-          <div class="errors" *ngIf="errors">
-            <mat-form-field class="example-full-width" appearance="fill">
-              <mat-label>Errors</mat-label>
-              <textarea matInput placeholder="Errors" readonly>{{ errors }}</textarea>
-            </mat-form-field>
-          </div>
-
-          <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
-            <!--- Note that these columns can be defined in any order.
+            <table
+              mat-table
+              #playlistsTable
+              [dataSource]="playlists"
+              cdkDropList
+              (cdkDropListDropped)="reorderPlaylists($event)"
+            >
+              <!--- Note that these columns can be defined in any order.
                   The actual rendered columns are set as a property on the row definition" -->
 
-            <ng-container matColumnDef="num">
-              <th mat-header-cell *matHeaderCellDef>#</th>
-              <td mat-cell *matCellDef="let element">{{ element.num }}</td>
-            </ng-container>
+              <ng-container matColumnDef="reorder">
+                <th mat-header-cell style="width: 80px" *matHeaderCellDef>Reorder</th>
+                <td mat-cell *matCellDef="let position">
+                  <mat-icon class="grabbable" color="accent" cdkDragHandle>reorder</mat-icon>
+                </td>
+              </ng-container>
 
-            <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef>Name</th>
-              <td mat-cell *matCellDef="let element">
+              <ng-container matColumnDef="position">
+                <th mat-header-cell style="width: 42px" *matHeaderCellDef>#</th>
+                <td mat-cell *matCellDef="let index = index">{{ index + 1 }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let element">
+                  <a
+                    mat-icon-button
+                    target="_blank"
+                    [href]="element.playlistUrl"
+                    color="primary"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <mat-icon>open_in_new</mat-icon>
+                  </a>
+                  {{ element.name }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="author">
+                <th mat-header-cell *matHeaderCellDef>Author</th>
+                <td mat-cell *matCellDef="let element">
+                  <a
+                    mat-icon-button
+                    target="_blank"
+                    [href]="element.authorUrl"
+                    color="primary"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <mat-icon>open_in_new</mat-icon>
+                  </a>
+                  {{ element.author }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="followers">
+                <th mat-header-cell *matHeaderCellDef>Followers</th>
+                <td mat-cell *matCellDef="let element">{{ element.followersCount }}</td>
+              </ng-container>
+
+              <!-- <ng-container matColumnDef="tracks">
+            <th mat-header-cell *matHeaderCellDef>Tracks</th>
+            <td mat-cell *matCellDef="let element">{{ element.tracksCount }}</td>
+          </ng-container> -->
+
+              <ng-container matColumnDef="lastFetch">
+                <th mat-header-cell *matHeaderCellDef>Last Fetch</th>
+                <td mat-cell *matCellDef="let element">{{ element.lastFetch | date }}</td>
+              </ng-container>
+
+              <!-- <ng-container matColumnDef="lastUpdate">
+            <th mat-header-cell *matHeaderCellDef>Last Update</th>
+            <td mat-cell *matCellDef="let element">{{ element.lastUpdate | date }}</td>
+          </ng-container> -->
+
+              <ng-container matColumnDef="delete">
+                <th mat-header-cell style="width: 15px" *matHeaderCellDef>Delete</th>
+                <td mat-cell *matCellDef="let element">
+                  <button *ngIf="!isLoading" mat-icon-button color="accent" (click)="deletePlaylist(element)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                  <app-loader *ngIf="isLoading" class="inline-loader" [isLoading]="isLoading"></app-loader>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="playlistColumns"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: playlistColumns"
+                cdkDrag
+                [cdkDragData]="row"
+                [cdkDragDisabled]="isLoading"
+              ></tr>
+            </table>
+          </mat-expansion-panel>
+        </mat-accordion>
+
+        <br />
+
+        <table
+          mat-table
+          #tracksTable
+          [dataSource]="tracks"
+          cdkDropList
+          (cdkDropListDropped)="reorderTracks($event)"
+          class="mat-elevation-z1"
+        >
+          <!--- Note that these columns can be defined in any order.
+                  The actual rendered columns are set as a property on the row definition" -->
+
+          <ng-container matColumnDef="reorder">
+            <th mat-header-cell style="width: 80px" *matHeaderCellDef>Reorder</th>
+            <td mat-cell *matCellDef="let position">
+              <mat-icon class="grabbable" color="accent" cdkDragHandle>reorder</mat-icon>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="position">
+            <th mat-header-cell style="width: 42px" *matHeaderCellDef>#</th>
+            <td mat-cell *matCellDef="let index = index">{{ index + 1 }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Name</th>
+            <td mat-cell *matCellDef="let element">
+              <a
+                mat-icon-button
+                target="_blank"
+                [href]="element.external_urls.spotify"
+                color="primary"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <mat-icon>open_in_new</mat-icon>
+              </a>
+              {{ element.name }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="artists">
+            <th mat-header-cell *matHeaderCellDef>Author</th>
+            <td mat-cell *matCellDef="let element">
+              <div *ngFor="let artist of element.artists">
                 <a
                   mat-icon-button
                   target="_blank"
-                  [href]="element.playlistUrl"
+                  [href]="artist.external_urls.spotify"
                   color="primary"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <mat-icon>link</mat-icon>
+                  <mat-icon>open_in_new</mat-icon>
                 </a>
-                {{ element.name }}
-              </td>
-            </ng-container>
+                {{ artist.name }}
+              </div>
+            </td>
+          </ng-container>
 
-            <ng-container matColumnDef="author">
-              <th mat-header-cell *matHeaderCellDef>Author</th>
-              <td mat-cell *matCellDef="let element">
+          <ng-container matColumnDef="featured">
+            <th mat-header-cell *matHeaderCellDef>Featured on</th>
+            <td mat-cell *matCellDef="let element">
+              <div *ngFor="let playlist of element.featuredOn">
                 <a
-                  mat-raised-button
+                  mat-icon-button
                   target="_blank"
-                  [href]="element.authorUrl"
+                  [href]="playlist.playlistUrl"
                   color="primary"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {{ element.author }}
+                  <mat-icon>open_in_new</mat-icon>
                 </a>
-              </td>
-            </ng-container>
+                {{ playlist.name }}
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="delete">
+            <th mat-header-cell style="width: 15px" *matHeaderCellDef>Delete</th>
+            <td mat-cell *matCellDef="let element">
+              <button *ngIf="!isLoading" mat-icon-button color="accent" (click)="deleteTrack(element)">
+                <mat-icon>delete</mat-icon>
+              </button>
+              <app-loader *ngIf="isLoading" class="inline-loader" [isLoading]="isLoading"></app-loader>
+            </td>
+          </ng-container>
 
-            <ng-container matColumnDef="followers">
-              <th mat-header-cell *matHeaderCellDef>Followers</th>
-              <td mat-cell *matCellDef="let element">{{ element.followers }}</td>
-            </ng-container>
-
-            <ng-container matColumnDef="tracks">
-              <th mat-header-cell *matHeaderCellDef>Tracks</th>
-              <td mat-cell *matCellDef="let element">{{ element.tracks }}</td>
-            </ng-container>
-
-            <ng-container matColumnDef="lastUpdate">
-              <th mat-header-cell *matHeaderCellDef>Last Update</th>
-              <td mat-cell *matCellDef="let element">{{ element.lastUpdate | date }}</td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-          </table>
-        </div>
+          <tr mat-header-row *matHeaderRowDef="trackColumns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: trackColumns"
+            cdkDrag
+            [cdkDragData]="row"
+            [cdkDragDisabled]="isLoading"
+          ></tr>
+        </table>
       </mat-card-actions>
     </mat-card-content>
   </mat-card>

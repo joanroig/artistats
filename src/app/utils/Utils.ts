@@ -1,9 +1,13 @@
 import { ResourceType } from '@app/models/resource-type.model';
 
 export default class Utils {
-  static parseSpotifyIds(spotifyStrings: string[], type: ResourceType): { ids: string[]; errors: string[] } {
+  static parseSpotifyIds(
+    spotifyStrings: string[],
+    type: ResourceType
+  ): { ids: string[]; errorsIds: string[]; errorLog: string[] } {
     let ids: string[] = [];
-    let errors: string[] = [];
+    let errorsIds: string[] = [];
+    let errorLog: string[] = [];
 
     // Get IDs from each playlist/track (url, uri or id)
     spotifyStrings.forEach((str) => {
@@ -16,7 +20,8 @@ export default class Utils {
       else if (str.startsWith(`spotify:${type}:`)) {
         const s = str.split(':')[2];
         if (s.length !== 22) {
-          errors.push('Incorrect Spotify URI ' + str);
+          errorLog.push('Incorrect Spotify URI ' + str);
+          errorsIds.push(str);
         } else {
           id = s;
         }
@@ -28,12 +33,14 @@ export default class Utils {
           s = s.split('?')[0];
         }
         if (s.length < 22) {
-          errors.push('Incorrect Spotify URL ' + str);
+          errorLog.push('Incorrect Spotify URL ' + str);
+          errorsIds.push(str);
         } else {
           id = s.slice(0, 22);
         }
       } else {
-        errors.push('Incorrect string ' + str);
+        errorLog.push('Incorrect string ' + str);
+        errorsIds.push(str);
       }
 
       // Add ID if it was found
@@ -41,6 +48,6 @@ export default class Utils {
         ids.push(id);
       }
     });
-    return { ids, errors };
+    return { ids, errorsIds, errorLog };
   }
 }

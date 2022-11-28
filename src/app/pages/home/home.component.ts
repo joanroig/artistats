@@ -1,28 +1,24 @@
-import { Component, OnInit } from '@angular/core';
-import { SpotifyService } from '@app/services/spotify/spotify.service';
+import { Component } from '@angular/core';
+import { AuthenticationService } from '@app/auth';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent {
   loginStatus?: boolean;
   userData?: any;
 
-  constructor(private spotifyService: SpotifyService) {}
-
-  ngOnInit() {
-    this.spotifyService.loginStatusUpdate().subscribe((loginStatus) => {
+  constructor(private authenticationService: AuthenticationService) {
+    this.authenticationService.getLoginStatusUpdate().subscribe((loginStatus) => {
       this.loginStatus = loginStatus;
     });
-
     // Get all user data updates
-    this.spotifyService.userDataUpdate().subscribe((userData) => {
+    this.authenticationService.getUserDataUpdate().subscribe((userData) => {
       this.userData = userData;
     });
-
     // Start the Spotify service
-    this.spotifyService.init();
+    // this.spotifyService.init();}
   }
 }

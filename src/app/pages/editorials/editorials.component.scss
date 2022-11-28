@@ -3,54 +3,6 @@
   padding: 1em;
 }
 
-// .logo {
-//   width: 150px;
-//   margin: 0 auto;
-// }
-
-// q {
-//   font-style: italic;
-//   quotes: "« " " »";
-// }
-
-.card {
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 30px;
-
-  width: fit-content;
-  padding: 10px;
-  padding-right: 40px;
-  border-radius: 100px;
-  color: #333;
-  background-color: #fff;
-  box-shadow: 0;
-  transition: box-shadow 300ms ease;
-
-  // &:hover {
-  box-shadow: 0 10px 30px 10px rgba(0, 0, 0, 0.1);
-  // }
-
-  .image {
-    margin-right: 20px;
-    display: block;
-    height: 100px;
-    width: 100px;
-    border-radius: 50%;
-  }
-
-  .name {
-    font-size: 30px;
-    border-bottom: 1px solid #ccc;
-  }
-
-  .job {
-    font-size: 20px;
-  }
-}
-
 table {
   width: 100%;
   text-align: left;
@@ -62,15 +14,7 @@ table {
 
 .buttons {
   margin-bottom: 20px;
-}
-
-.errors {
-  width: 100%;
-  mat-form-field {
-    width: 100%;
-    textarea {
-      height: 100px;
-    }
+  button {
+    margin: 4px !important;
   }
-  // margin-bottom: 20px;
 }

@@ -1,9 +1,9 @@
+import { HttpErrorResponse, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { environment } from '@env/environment';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Logger } from '../logger.service';
 
 const log = new Logger('ErrorHandlerInterceptor');
@@ -15,16 +15,21 @@ const log = new Logger('ErrorHandlerInterceptor');
   providedIn: 'root',
 })
 export class ErrorHandlerInterceptor implements HttpInterceptor {
+  constructor(private snackBar: MatSnackBar) {}
+
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    return next.handle(request).pipe(catchError((error) => this.errorHandler(error)));
+    return next.handle(request).pipe(catchError((error: HttpErrorResponse) => this.errorHandler(error)));
   }
 
   // Customize the default error handler here if needed
-  private errorHandler(response: HttpEvent<any>): Observable<HttpEvent<any>> {
-    if (!environment.production) {
-      // Do something with the error
-      log.error('Request error', response);
+  private errorHandler(error: HttpErrorResponse): Observable<HttpEvent<any>> {
+    if (error.status === 401) {
+      let snackBarRef = this.snackBar.open('Token expired, go to user menu and press "Refresh token"', 'OK', {
+        duration: 5000,
+      });
     }
-    throw response;
+    log.error('Request error', error);
+
+    throw error;
   }
 }
