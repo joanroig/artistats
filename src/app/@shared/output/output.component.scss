@@ -1,0 +1,27 @@
+.output {
+  max-width: 800px;
+  // min-height: 200px;
+  width: 100%;
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.errors {
+  margin: auto;
+  max-width: 800px;
+  width: 100%;
+  mat-form-field {
+    width: 100%;
+    textarea {
+      height: 100px;
+    }
+  }
+  // margin-bottom: 20px;
+}
+
+.clear {
+  position: absolute;
+  top: -26px;
+  right: -12px;
+}

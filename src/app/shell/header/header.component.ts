@@ -3,7 +3,7 @@ import { MatSidenav } from '@angular/material/sidenav';
 import { Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
-import { AuthenticationService, CredentialsService } from '@app/auth';
+import { AuthenticationService } from '@app/auth';
 
 @Component({
   selector: 'app-header',
@@ -12,15 +12,23 @@ import { AuthenticationService, CredentialsService } from '@app/auth';
 })
 export class HeaderComponent implements OnInit {
   @Input() sidenav!: MatSidenav;
+  name = 'User name';
 
   constructor(
     private router: Router,
     private titleService: Title,
-    private authenticationService: AuthenticationService,
-    private credentialsService: CredentialsService
+    private authenticationService: AuthenticationService
   ) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.authenticationService.getUserDataUpdate().subscribe((userData: any) => {
+      this.name = userData.display_name;
+    });
+  }
+
+  refresh() {
+    this.authenticationService.login();
+  }
 
   logout() {
     this.authenticationService.logout().subscribe(() => {
@@ -29,8 +37,7 @@ export class HeaderComponent implements OnInit {
   }
 
   get username(): string | null {
-    const credentials = this.credentialsService.credentials;
-    return credentials ? credentials.username : null;
+    return this.name;
   }
 
   get title(): string {

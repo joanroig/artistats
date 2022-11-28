@@ -34,6 +34,7 @@
       <span translate>Logged in as</span>&nbsp;<strong>{{ username }}</strong>
     </button>
     <mat-divider></mat-divider>
+    <button mat-menu-item (click)="refresh()" translate>Refresh token</button>
     <button mat-menu-item (click)="logout()" translate>Logout</button>
   </mat-menu>
 </mat-toolbar>

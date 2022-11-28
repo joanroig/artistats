@@ -5,7 +5,7 @@ export interface Credentials {
   username: string;
 }
 
-const credentialsKey = 'credentials';
+const credentialsKey = 'accessToken';
 
 /**
  * Provides storage for authentication credentials.
@@ -15,14 +15,9 @@ const credentialsKey = 'credentials';
   providedIn: 'root',
 })
 export class CredentialsService {
-  private _credentials: Credentials | null = null;
+  private _credentials: String | null = null;
 
-  constructor() {
-    const savedCredentials = sessionStorage.getItem(credentialsKey) || localStorage.getItem(credentialsKey);
-    if (savedCredentials) {
-      this._credentials = JSON.parse(savedCredentials);
-    }
-  }
+  constructor() {}
 
   /**
    * Checks is the user is authenticated.
@@ -36,7 +31,11 @@ export class CredentialsService {
    * Gets the user credentials.
    * @return The user credentials or null if the user is not authenticated.
    */
-  get credentials(): Credentials | null {
+  get credentials(): String | null {
+    const savedCredentials = sessionStorage.getItem(credentialsKey) || localStorage.getItem(credentialsKey);
+    if (savedCredentials) {
+      this._credentials = savedCredentials;
+    }
     return this._credentials;
   }
 
@@ -47,15 +46,15 @@ export class CredentialsService {
    * @param credentials The user credentials.
    * @param remember True to remember credentials across sessions.
    */
-  setCredentials(credentials?: Credentials, remember?: boolean) {
-    this._credentials = credentials || null;
+  // setCredentials(credentials?: String, remember?: boolean) {
+  //   this._credentials = credentials || null;
 
-    if (credentials) {
-      const storage = remember ? localStorage : sessionStorage;
-      storage.setItem(credentialsKey, JSON.stringify(credentials));
-    } else {
-      sessionStorage.removeItem(credentialsKey);
-      localStorage.removeItem(credentialsKey);
-    }
-  }
+  //   if (credentials) {
+  //     const storage = remember ? localStorage : sessionStorage;
+  //     storage.setItem(credentialsKey, JSON.stringify(credentials));
+  //   } else {
+  //     sessionStorage.removeItem(credentialsKey);
+  //     localStorage.removeItem(credentialsKey);
+  //   }
+  // }
 }

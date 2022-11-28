@@ -1,11 +1,21 @@
-<h1 mat-dialog-title>Delete file</h1>
-<div mat-dialog-content>
-  <mat-form-field class="example-full-width" appearance="fill">
-    <mat-label>Errors</mat-label>
-    <textarea matInput placeholder="Errors">{{ list }}</textarea>
+<h1 mat-dialog-title [ngSwitch]="dbId">
+  <span *ngSwitchDefault>Add data</span>
+  <span *ngSwitchCase="DbIds.analysis_playlists">Add playlists</span>
+  <span *ngSwitchCase="DbIds.editorials_playlists">Add editorial playlists</span>
+  <span *ngSwitchCase="DbIds.editorials_tracks">Add tracks</span>
+</h1>
+<mat-dialog-content>
+  <mat-form-field class="full-width" appearance="fill">
+    <mat-label>Add list of uri/urls</mat-label>
+    <textarea matInput placeholder="URLs or URIs" [(ngModel)]="inputString" [readonly]="isLoading"></textarea>
   </mat-form-field>
-</div>
-<div mat-dialog-actions>
-  <button mat-button mat-dialog-close>No</button>
-  <button mat-button mat-dialog-close cdkFocusInitial>Ok</button>
-</div>
+  <app-output></app-output>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <app-loader class="inline-loader" [isLoading]="isLoading"></app-loader>
+  <button mat-raised-button [disabled]="isLoading" (click)="close()">Close</button>
+  <button mat-raised-button color="primary" [disabled]="!isLoading" (click)="stopUpdate()">Stop</button>
+  <button mat-raised-button color="primary" [disabled]="isLoading" cdkFocusInitial (click)="updatePlaylists()">
+    Process
+  </button>
+</mat-dialog-actions>

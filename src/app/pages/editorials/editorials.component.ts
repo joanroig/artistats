@@ -1,12 +1,14 @@
-import { Clipboard } from '@angular/cdk/clipboard';
-import { DatePipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { CdkDragSortEvent, moveItemInArray } from '@angular/cdk/drag-drop';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatTable } from '@angular/material/table';
+import { OutputComponent } from '@app/@shared/output/output.component';
+import { DbId } from '@app/models/db-id.model';
+import { ModeType } from '@app/models/mode-type.model';
 import { Playlist } from '@app/models/playlist.model';
-import { ResourceType } from '@app/models/resource-type.model';
+import { Track } from '@app/models/track.model';
+import { DatabaseService } from '@app/services/database/database.service';
+import { DialogService } from '@app/services/dialog/dialog.service';
 import { SpotifyService } from '@app/services/spotify/spotify.service';
-import Utils from '@app/utils/Utils';
 
 @Component({
   selector: 'app-editorials',
@@ -14,215 +16,189 @@ import Utils from '@app/utils/Utils';
   styleUrls: ['./editorials.component.scss'],
 })
 export class EditorialsComponent implements OnInit {
-  throttleMillis = 25;
-
   // Load controls
-  startupLoaded = false;
-  loading = false;
+  isLoading = false;
   stop = false;
+  pauseDatabaseUpdates = false;
 
-  loginStatus?: boolean;
-  userData?: any;
-  errors = '';
+  withErrors: string[] = [];
 
-  playlistIds: string[] = [];
+  playlistColumns: string[] = [
+    'reorder',
+    'position',
+    'name',
+    'author',
+    'followers',
+    // 'tracks',
+    'lastFetch',
+    // 'lastUpdate',
+    'delete',
+  ];
+  trackColumns: string[] = ['reorder', 'position', 'name', 'artists', 'featured', 'delete'];
+  playlists: Playlist[] = [];
+  tracks: Track[] = [];
 
-  playlistData: Map<string, Playlist> = new Map<string, Playlist>();
+  @ViewChild('playlistsTable')
+  playlistsTable!: MatTable<Playlist>;
 
-  displayedColumns: string[] = ['num', 'name', 'author', 'followers', 'tracks', 'lastUpdate'];
-  dataSource: Playlist[] = [];
+  @ViewChild('tracksTable')
+  tracksTable!: MatTable<Track>;
+
+  @ViewChild(OutputComponent)
+  output!: OutputComponent;
 
   constructor(
-    private httpClient: HttpClient,
-    private spotifyService: SpotifyService,
-    private clipboard: Clipboard,
-    private datepipe: DatePipe,
-    private snackBar: MatSnackBar
+    private databaseService: DatabaseService,
+    private dialogService: DialogService,
+    private spotifyService: SpotifyService
   ) {}
 
   ngOnInit() {
-    this.spotifyService.loginStatusUpdate().subscribe((loginStatus) => {
-      this.loginStatus = loginStatus;
-      // First load after detecting a login
-      if (loginStatus === true && this.startupLoaded === false) {
-        this.startupLoaded = true;
-        setTimeout(() => {
-          this.updatePlaylists();
-        }, 300);
+    this.databaseService.getUpdates(DbId.editorials_playlists).subscribe((_) => {
+      if (!this.pauseDatabaseUpdates) {
+        this.syncPlaylists();
       }
     });
-
-    // Get all user data updates
-    this.spotifyService.userDataUpdate().subscribe((userData) => {
-      this.userData = userData;
-    });
-
-    // Start the Spotify service
-    this.spotifyService.init();
-  }
-
-  login() {
-    this.spotifyService.login();
-  }
-
-  logout() {
-    this.clearData();
-    this.stopUpdate();
-    this.startupLoaded = false;
-    this.spotifyService.logout();
-  }
-
-  copyDates() {
-    let dates = '';
-    Array.from(this.playlistData.values()).forEach((p) => {
-      dates += this.datepipe.transform(p.lastUpdate, 'dd/MM/yyyy') + '\n';
-    });
-    this.clipboard.copy(dates);
-    this.snackBar.open('Dates copied to the clipboard!', 'Close', {
-      duration: 1000,
+    this.databaseService.getUpdates(DbId.editorials_tracks).subscribe((_) => {
+      if (!this.pauseDatabaseUpdates) {
+        this.syncTracks();
+      }
     });
   }
 
-  copyFollowers() {
-    let followers = '';
-    Array.from(this.playlistData.values()).forEach((p) => {
-      followers += p.followersCount + '\n';
+  addPlaylists() {
+    this.dialogService.openAddDialog(DbId.editorials_playlists).subscribe((_) => {
+      // this.sync();
     });
-    this.clipboard.copy(followers);
-    this.snackBar.open('Followers copied to the clipboard!', 'Close', {
-      duration: 1000,
+  }
+
+  addTracks() {
+    this.dialogService.openAddDialog(DbId.editorials_tracks).subscribe((_) => {
+      // this.sync();
     });
+  }
+
+  // Synchronize with the database
+  private syncPlaylists() {
+    this.databaseService.getAllPlaylists(DbId.editorials_playlists).then((res) => {
+      // Sort by stored position attribute
+      res.sort((a, b) => {
+        if (a.position === undefined) return 1;
+        if (b.position === undefined) return -1;
+        return a.position - b.position;
+      });
+
+      this.playlists = res;
+      this.processMatches();
+    });
+  }
+
+  // Synchronize with the database
+  private syncTracks() {
+    this.databaseService.getAllTracks(DbId.editorials_tracks).then((res) => {
+      // Sort by stored position attribute
+      res.sort((a, b) => {
+        if (a.position === undefined) return 1;
+        if (b.position === undefined) return -1;
+        return a.position - b.position;
+      });
+
+      this.tracks = res;
+      this.processMatches();
+    });
+  }
+
+  // find all featured tracks
+  async processMatches() {
+    this.pauseDatabaseUpdates = true;
+
+    let temp = this.tracks.map((x) => Object.assign({}, x));
+
+    for (let track of temp) {
+      track.featuredOn = [];
+      for (let playlist of this.playlists) {
+        let match = playlist.tracks?.find((tr) => tr.track.id === track.id);
+
+        if (match) {
+          track.featuredOn.push(playlist);
+          await this.databaseService.setTrack(track.id, track, DbId.editorials_tracks);
+        }
+      }
+    }
+
+    this.tracks = temp;
+
+    this.tracksTable.renderRows();
+
+    this.pauseDatabaseUpdates = false;
+
+    // this.syncTracks();
   }
 
   stopUpdate() {
-    this.stop = true;
+    this.spotifyService.stopUpdate();
   }
 
-  async updatePlaylists() {
-    this.clearData();
-
-    this.httpClient.get('./assets/editorial-playlists.txt', { responseType: 'text' }).subscribe({
-      next: (ids) => {
-        // Reset playlist ids
-        this.playlistIds = [];
-
-        // Get playlist strings line by line
-        let playlistStrings = ids.replace(/\r\n/g, '\n').split('\n');
-
-        // Remove empty strings
-        playlistStrings = playlistStrings.filter((n) => n);
-
-        // Get all playlist ids from the strings
-        let res = Utils.parseSpotifyIds(playlistStrings, ResourceType.playlist);
-        this.playlistIds = res.ids;
-        if (res.errors.length > 0) {
-          for (let error in res.errors) {
-            this.errors += error + '\n';
-          }
-        }
-
-        // Get data of all playlists
-        this.getPlaylistData();
-      },
-      error: (e) => console.error(e),
+  deletePlaylist(playlist: Playlist) {
+    this.databaseService.delete(playlist.id, DbId.editorials_playlists).then((_) => {
+      this.syncPlaylists();
     });
   }
 
-  private async getPlaylistData() {
-    this.loading = true;
+  deleteTrack(track: Track) {
+    this.databaseService.delete(track.id, DbId.editorials_tracks).then((_) => {
+      this.syncTracks();
+    });
+  }
 
-    console.info('Number of playlists to process: ' + this.playlistIds.length);
+  async reorderPlaylists(event: CdkDragSortEvent) {
+    const prevIndex = this.playlists.findIndex((d) => d === event.item.data);
+    moveItemInArray(this.playlists, prevIndex, event.currentIndex);
+    this.playlistsTable.renderRows();
 
-    let count = 1;
-    for (const id of this.playlistIds) {
-      // Stop if requested
-      if (this.stop) {
-        this.stop = false;
-        this.loading = false;
-        console.error('Stopped by the user');
-        this.errors += 'Stopped by the user' + '\n';
-        break;
-      }
+    // Update database, be sure to unsubscribe to changes to prevent refreshing data while updating
+    this.pauseDatabaseUpdates = true;
 
-      // Skip if already processed
-      if (this.playlistData.has(id)) {
-        console.error('Repeated playlist ' + id);
-        this.errors += 'Repeated playlist ' + id + '\n';
-        continue;
-      }
-
-      // Fetch data
-      await this.spotifyService.getPlaylistData(id).then(
-        async (data) => {
-          let tracks = data.tracks.items;
-
-          // Get the rest of the tracks if needed
-          if (data.tracks.next) {
-            let offset = data.tracks.offset;
-            let limit = 50;
-            let morePages = true;
-            while (morePages) {
-              // Throttle fetch
-              await delay(this.throttleMillis);
-              await this.spotifyService.getPlaylistPage(id, offset, limit).then(
-                (pageData) => {
-                  offset += limit;
-                  tracks = tracks.concat(pageData.items);
-                  if (!pageData.next) {
-                    morePages = false;
-                  }
-                },
-                (error) => {
-                  console.error('Problem fetching playlist ' + id + ' - ' + error.status);
-                  this.errors += 'Problem fetching playlist ' + id + ' - ' + error.status + '\n';
-                  morePages = false;
-                }
-              );
-            }
-          }
-
-          // Calculate playlist last update
-          let lastUpdate = new Date('1970-01-01T01:01:01Z');
-          tracks.forEach((track) => {
-            const d = new Date(track.added_at);
-            if (d > lastUpdate) {
-              lastUpdate = d;
-            }
-          });
-
-          const playlist: Playlist = {
-            num: count,
-            id,
-            name: data.name,
-            author: data.owner.display_name,
-            playlistUrl: data.external_urls.spotify,
-            authorUrl: data.owner.external_urls.spotify,
-            followersCount: data.followers.total,
-            tracksCount: data.tracks.total,
-            lastUpdate,
-          };
-          this.playlistData.set(id, playlist);
-          count++;
-        },
-        (error) => {
-          console.error('Problem fetching playlist ' + id + ' - ' + error.status);
-          this.errors += 'Problem fetching playlist ' + id + ' - ' + error.status + '\n';
-        }
-      );
-
-      // Throttle fetch
-      await delay(this.throttleMillis);
-
-      this.dataSource = Array.from(this.playlistData.values());
+    let index = 0;
+    for (var playlist of this.playlists) {
+      playlist.position = index;
+      await this.databaseService.setPlaylist(playlist.id, playlist, DbId.editorials_playlists);
+      index++;
     }
 
-    this.loading = false;
+    this.pauseDatabaseUpdates = false;
   }
 
-  private clearData() {
-    this.errors = '';
-    this.playlistData.clear();
-    this.dataSource = [];
+  async reorderTracks(event: CdkDragSortEvent) {
+    const prevIndex = this.tracks.findIndex((d) => d === event.item.data);
+    moveItemInArray(this.tracks, prevIndex, event.currentIndex);
+    this.tracksTable.renderRows();
+
+    // Update database, be sure to unsubscribe to changes to prevent refreshing data while updating
+    this.pauseDatabaseUpdates = true;
+
+    let index = 0;
+    for (var track of this.tracks) {
+      track.position = index;
+      await this.databaseService.setTrack(track.id, track, DbId.editorials_tracks);
+      index++;
+    }
+
+    this.pauseDatabaseUpdates = false;
+  }
+
+  async updatePlaylists() {
+    this.isLoading = true;
+    this.output.captureLogs();
+
+    let keys = await this.databaseService.getAllKeys(DbId.editorials_playlists);
+    let failed = await this.spotifyService.insertPlaylists(keys, ModeType.update, DbId.editorials_playlists);
+
+    this.withErrors.push(...failed);
+
+    await this.processMatches();
+
+    this.isLoading = false;
+    this.output.stopCapturing();
   }
 }
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
