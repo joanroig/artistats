@@ -50,3 +50,41 @@ body {
   cursor: -moz-grabbing;
   cursor: -webkit-grabbing;
 }
+
+.disable:hover {
+  cursor: not-allowed;
+}
+.disable:active {
+  pointer-events: none;
+}
+mat-icon.disable {
+  filter: opacity(0.4);
+}
+
+app-output {
+  display: block;
+}
+
+.filter {
+  display: block;
+  margin: auto;
+  max-width: 800px;
+  // min-height: 200px;
+  width: 100%;
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+a.no-decoration {
+  color: inherit;
+  text-decoration: none;
+  &:hover {
+    color: mat-color($app-primary);
+  }
+}
+
+// separate multiple elements in a table cell
+.multiple {
+  padding: 8px;
+}

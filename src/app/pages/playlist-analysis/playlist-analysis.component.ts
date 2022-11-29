@@ -1,27 +1,42 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { CdkDragSortEvent, moveItemInArray } from '@angular/cdk/drag-drop';
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTable } from '@angular/material/table';
+import { MatSort, Sort, SortDirection } from '@angular/material/sort';
+import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { OutputComponent } from '@app/@shared/output/output.component';
+import { ClipboardType } from '@app/models/clipboard-type.model';
 import { DbId } from '@app/models/db-id.model';
 import { ModeType } from '@app/models/mode-type.model';
 import { Playlist } from '@app/models/playlist.model';
 import { DatabaseService } from '@app/services/database/database.service';
 import { DialogService } from '@app/services/dialog/dialog.service';
+import { SettingsService } from '@app/services/settings/settings.service';
 import { SpotifyService } from '@app/services/spotify/spotify.service';
+import {
+  ANALYSIS_PLAYLISTS_SORT_ACTIVE,
+  ANALYSIS_PLAYLISTS_SORT_DIRECTION,
+  ANALYSIS_PLAYLISTS_SORT_REMEMBER,
+} from '@app/utils/constants';
+import Utils from '@app/utils/Utils';
 
 @Component({
   selector: 'app-playlist-analysis',
   templateUrl: './playlist-analysis.component.html',
   styleUrls: ['./playlist-analysis.component.scss'],
 })
-export class PlaylistAnalysisComponent implements OnInit {
+export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
   // Load controls
   isLoading = false;
+  isStoppable = false;
   stop = false;
-  pauseDatabaseUpdates = false;
+
+  rememberPlaylistSort = true;
+  matSortActive = '';
+  matSortDirection: SortDirection = 'asc';
+
+  filterValue = '';
 
   withErrors: string[] = [];
 
@@ -32,14 +47,17 @@ export class PlaylistAnalysisComponent implements OnInit {
     'position',
     'name',
     'author',
-    'followers',
-    'tracks',
-    'lastFetch',
+    'followersCount',
+    'tracksCount',
+    // 'lastFetch',
     'lastUpdate',
     'delete',
   ];
 
-  dataSource: Playlist[] = [];
+  playlists = new MatTableDataSource<Playlist>();
+
+  @ViewChild(MatSort)
+  sort!: MatSort;
 
   @ViewChild('table')
   table!: MatTable<Playlist>;
@@ -47,106 +65,164 @@ export class PlaylistAnalysisComponent implements OnInit {
   @ViewChild(OutputComponent)
   output!: OutputComponent;
 
+  // expose classes to the template
+  Utils = Utils;
+  ClipboardType = ClipboardType;
+
+  get isSorted() {
+    return this.sort.direction !== '';
+  }
+
   constructor(
     private clipboard: Clipboard,
     private datePipe: DatePipe,
     private snackBar: MatSnackBar,
     private databaseService: DatabaseService,
     private dialogService: DialogService,
-    private spotifyService: SpotifyService
-  ) {}
+    private spotifyService: SpotifyService,
+    private settingsService: SettingsService
+  ) {
+    this.rememberPlaylistSort = this.settingsService.getBooleanSetting(ANALYSIS_PLAYLISTS_SORT_REMEMBER);
+
+    if (this.rememberPlaylistSort) {
+      this.matSortActive = this.settingsService.getSetting(ANALYSIS_PLAYLISTS_SORT_ACTIVE);
+      this.matSortDirection = this.settingsService.getSetting(ANALYSIS_PLAYLISTS_SORT_DIRECTION) as SortDirection;
+    }
+  }
+
+  ngAfterViewInit() {
+    this.playlists.sort = this.sort;
+
+    this.playlists.sortingDataAccessor = (data: any, sortHeaderId: string): string => {
+      // put names with special characters at the top by adding a _ prefix
+      if (sortHeaderId === 'name' || sortHeaderId === 'author') {
+        var searchPattern = new RegExp('^[^a-zA-Z0-9]');
+        if (searchPattern.test(data[sortHeaderId])) {
+          return '_' + data[sortHeaderId];
+        }
+      }
+      // compare strings in lowercase
+      if (typeof data[sortHeaderId] === 'string') {
+        return data[sortHeaderId].toLocaleLowerCase();
+      }
+
+      return data[sortHeaderId];
+    };
+  }
 
   ngOnInit() {
-    this.databaseService.getUpdates(DbId.analysis_playlists).subscribe((_) => {
-      if (!this.pauseDatabaseUpdates) {
-        this.sync();
-      }
-    });
+    // first load
+    this.sync();
   }
 
-  copyDates() {
-    let dates = '';
-    this.dataSource.forEach((p) => {
-      dates += this.datePipe.transform(p.lastUpdate, 'dd/MM/yyyy') + '\n';
-    });
-    this.clipboard.copy(dates);
-    this.snackBar.open('Dates copied to the clipboard!', 'Close', {
-      duration: 1000,
-    });
+  // fetch all playlists and update the table with the new data
+  async updatePlaylists() {
+    this.isLoading = true;
+    this.isStoppable = true;
+    this.output.startLogSession();
+
+    let keys = await this.databaseService.getAllKeys(DbId.analysis_playlists);
+    let res = await this.spotifyService.fetchPlaylists(keys, ModeType.update, DbId.analysis_playlists);
+
+    this.withErrors.push(...res.failed);
+
+    this.isStoppable = false;
+    this.isLoading = false;
+    this.output.stopLogSession();
   }
 
-  copyFollowers() {
-    let followers = '';
-    this.dataSource.forEach((p) => {
-      followers += p.followersCount + '\n';
-    });
-    this.clipboard.copy(followers);
-    this.snackBar.open('Followers copied to the clipboard!', 'Close', {
-      duration: 1000,
-    });
-  }
-
-  addPlaylists() {
-    this.dialogService.openAddDialog(DbId.analysis_playlists).subscribe((_) => {
-      // this.sync();
-    });
-  }
-
-  // Synchronize with the database
-  private sync() {
-    this.databaseService.getAllPlaylists(DbId.analysis_playlists).then((res) => {
-      // Sort by stored position attribute
-      res.sort((a, b) => {
-        if (a.position === undefined) return 1;
-        if (b.position === undefined) return -1;
-        return a.position - b.position;
-      });
-
-      this.dataSource = res;
-    });
-  }
-
+  // stop the update after finishing the current iteration
   stopUpdate() {
     this.spotifyService.stopUpdate();
   }
 
-  delete(playlist: Playlist) {
-    this.databaseService.delete(playlist.id, DbId.analysis_playlists).then((_) => {
-      this.sync();
+  // copy data to the clipboard
+  copyToClipboard(type: ClipboardType) {
+    let data = '';
+    // get data filtered and sorted
+    switch (type) {
+      case ClipboardType.dates:
+        this.playlists.sortData(this.playlists.filteredData, this.sort).forEach((p) => {
+          data += this.datePipe.transform(p.lastUpdate, 'dd/MM/yyyy') + '\n';
+        });
+        break;
+      case ClipboardType.followers:
+        this.playlists.sortData(this.playlists.filteredData, this.sort).forEach((p) => {
+          data += p.followersCount + '\n';
+        });
+        break;
+    }
+    this.clipboard.copy(data);
+    this.snackBar.open('Data copied to the clipboard!', 'Close', {
+      duration: 1000,
     });
   }
 
-  async reorderTable(event: CdkDragSortEvent) {
-    const prevIndex = this.dataSource.findIndex((d) => d === event.item.data);
-    moveItemInArray(this.dataSource, prevIndex, event.currentIndex);
-    this.table.renderRows();
+  async openAddDialog() {
+    // listen to database updates
+    let playlistUpdates = this.databaseService.getUpdates(DbId.analysis_playlists).subscribe(async (_) => {
+      await this.sync();
+    });
 
-    // Update database, be sure to unsubscribe to changes to prevent refreshing data while updating
-    this.pauseDatabaseUpdates = true;
-
-    let index = 0;
-    for (var playlist of this.dataSource) {
-      playlist.position = index;
-      await this.databaseService.setPlaylist(playlist.id, playlist, DbId.analysis_playlists);
-      index++;
-    }
-
-    this.pauseDatabaseUpdates = false;
-
-    // // Update view - not needed!
-    // this.sync();
+    // open the dialog
+    this.dialogService.openAddDialog(DbId.analysis_playlists).subscribe(async (_) => {
+      playlistUpdates.unsubscribe();
+    });
   }
 
-  async updatePlaylists() {
+  isDragDisabled() {
+    return this.isLoading || this.isSorted || this.filterValue !== '';
+  }
+
+  applyFilter() {
+    let value = this.filterValue;
+    value = value.trim(); // remove whitespace
+    value = value.toLowerCase(); // datasource defaults to lowercase matches
+    this.playlists.filter = value;
+  }
+
+  sortChange(sortState: Sort) {
+    // save sort settings
+    this.settingsService.setSetting(ANALYSIS_PLAYLISTS_SORT_ACTIVE, sortState.active);
+    this.settingsService.setSetting(ANALYSIS_PLAYLISTS_SORT_DIRECTION, sortState.direction);
+  }
+
+  async reorderTable(event: CdkDragSortEvent) {
+    const prevIndex = this.playlists.data.findIndex((d) => d === event.item.data);
+    moveItemInArray(this.playlists.data, prevIndex, event.currentIndex);
+    this.updatePositions();
+  }
+
+  async deletePlaylist(playlist: Playlist) {
+    await this.databaseService.delete(playlist.id, DbId.analysis_playlists);
+    await this.sync();
+    await this.updatePositions();
+  }
+
+  // update the position attribute of all rows to match with the current table order
+  private async updatePositions() {
+    this.playlists.data.forEach((playlist, index) => {
+      playlist.position = index;
+    });
+
+    // table update
+    this.playlists.data = this.playlists.data;
+
+    // update database
+    for (let playlist of this.playlists.data) {
+      await this.databaseService.setPlaylist(playlist.id, playlist, DbId.analysis_playlists);
+    }
+  }
+
+  // synchronize with the database
+  private async sync() {
     this.isLoading = true;
-    this.output.captureLogs();
-
-    let keys = await this.databaseService.getAllKeys(DbId.analysis_playlists);
-    let failed = await this.spotifyService.insertPlaylists(keys, ModeType.update, DbId.analysis_playlists);
-
-    this.withErrors.push(...failed);
-
+    let res = await this.databaseService.getAllPlaylists(DbId.analysis_playlists);
+    // sort by stored position attribute
+    res.sort((a, b) => {
+      return a.position - b.position;
+    });
+    this.playlists.data = res;
     this.isLoading = false;
-    this.output.stopCapturing();
   }
 }

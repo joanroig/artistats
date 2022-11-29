@@ -15,7 +15,13 @@
   <app-loader class="inline-loader" [isLoading]="isLoading"></app-loader>
   <button mat-raised-button [disabled]="isLoading" (click)="close()">Close</button>
   <button mat-raised-button color="primary" [disabled]="!isLoading" (click)="stopUpdate()">Stop</button>
-  <button mat-raised-button color="primary" [disabled]="isLoading" cdkFocusInitial (click)="updatePlaylists()">
+  <button
+    mat-raised-button
+    color="primary"
+    [disabled]="isLoading || inputString === ''"
+    cdkFocusInitial
+    (click)="updatePlaylists()"
+  >
     Process
   </button>
 </mat-dialog-actions>

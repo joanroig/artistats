@@ -3,7 +3,7 @@ import { DbId } from '@app/models/db-id.model';
 import { Playlist } from '@app/models/playlist.model';
 import { Track } from '@app/models/track.model';
 import * as localforage from 'localforage';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -17,11 +17,15 @@ export class DatabaseService {
   editorialPlaylistsStore = localforage.createInstance({ name: 'editorial-playlists' });
   editorialTracksStore = localforage.createInstance({ name: 'editorial-tracks' });
 
-  private analysisPlaylistsChanges = new BehaviorSubject<boolean>(true);
-  private editorialPlaylistsChanges = new BehaviorSubject<boolean>(true);
-  private editorialTracksChanges = new BehaviorSubject<boolean>(true);
+  private analysisPlaylistsChanges = new Subject<boolean>();
+  private editorialPlaylistsChanges = new Subject<boolean>();
+  private editorialTracksChanges = new Subject<boolean>();
 
-  // Return an observable to notify about database changes
+  /**
+   * Return an observable to notify about database changes
+   * @param dbId database id to subscribe to
+   * @returns true value to indicate there are changes, the data needs to be retrieved manually
+   */
   public getUpdates(dbId: DbId): Observable<boolean> {
     return this.getNotifier(dbId).asObservable();
   }
@@ -32,16 +36,24 @@ export class DatabaseService {
 
   async setPlaylist(id: string, playlist: Playlist, dbId: DbId) {
     await this.getStore(dbId).setItem(id, playlist);
+    console.debug('setPlaylist');
     this.getNotifier(dbId).next(true);
   }
 
   async setTrack(id: string, track: Track, dbId: DbId) {
     await this.getStore(dbId).setItem(id, track);
+    console.debug('setTrack');
     this.getNotifier(dbId).next(true);
   }
 
-  delete(id: string, dbId: DbId) {
-    return this.getStore(dbId).removeItem(id);
+  async delete(id: string, dbId: DbId) {
+    await this.getStore(dbId).removeItem(id);
+    console.debug('delete');
+    this.getNotifier(dbId).next(true);
+  }
+
+  async getCount(dbId: DbId): Promise<number> {
+    return this.getStore(dbId).length();
   }
 
   async getAllKeys(dbId: DbId): Promise<string[]> {
@@ -96,7 +108,7 @@ export class DatabaseService {
     return store;
   }
 
-  private getNotifier(dbId: DbId): BehaviorSubject<boolean> {
+  private getNotifier(dbId: DbId): Subject<boolean> {
     let notifier;
     switch (dbId) {
       case DbId.analysis_playlists:

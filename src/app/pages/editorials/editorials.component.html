@@ -9,9 +9,20 @@
           <button mat-raised-button color="accent" [disabled]="isLoading" (click)="addTracks()">
             {{ 'ADD TRACKS' }}
           </button>
-          <button mat-raised-button color="primary" (click)="isLoading ? stopUpdate() : updatePlaylists()">
-            {{ isLoading ? 'STOP REFRESH' : 'REFRESH' }}
+          <button
+            *ngIf="isLoading; else stop"
+            mat-raised-button
+            color="primary"
+            (click)="stopUpdate()"
+            [disabled]="!isStoppable"
+          >
+            {{ 'STOP REFRESH' }}
           </button>
+          <ng-template #stop>
+            <button mat-raised-button color="primary" (click)="refresh()">
+              {{ 'REFRESH' }}
+            </button></ng-template
+          >
         </div>
 
         <app-output></app-output>
@@ -49,16 +60,14 @@
                 <th mat-header-cell *matHeaderCellDef>Name</th>
                 <td mat-cell *matCellDef="let element">
                   <a
-                    mat-icon-button
                     target="_blank"
-                    [href]="element.playlistUrl"
                     color="primary"
                     target="_blank"
                     rel="noopener noreferrer"
+                    class="no-decoration"
+                    [href]="element.playlistUrl"
+                    >{{ element.name }}</a
                   >
-                    <mat-icon>open_in_new</mat-icon>
-                  </a>
-                  {{ element.name }}
                 </td>
               </ng-container>
 
@@ -66,16 +75,14 @@
                 <th mat-header-cell *matHeaderCellDef>Author</th>
                 <td mat-cell *matCellDef="let element">
                   <a
-                    mat-icon-button
                     target="_blank"
-                    [href]="element.authorUrl"
                     color="primary"
                     target="_blank"
                     rel="noopener noreferrer"
+                    class="no-decoration"
+                    [href]="element.authorUrl"
+                    >{{ element.author }}</a
                   >
-                    <mat-icon>open_in_new</mat-icon>
-                  </a>
-                  {{ element.author }}
                 </td>
               </ng-container>
 
@@ -84,20 +91,25 @@
                 <td mat-cell *matCellDef="let element">{{ element.followersCount }}</td>
               </ng-container>
 
-              <!-- <ng-container matColumnDef="tracks">
-            <th mat-header-cell *matHeaderCellDef>Tracks</th>
-            <td mat-cell *matCellDef="let element">{{ element.tracksCount }}</td>
-          </ng-container> -->
+              <ng-container matColumnDef="tracks">
+                <th mat-header-cell *matHeaderCellDef>Tracks</th>
+                <td mat-cell *matCellDef="let element">{{ element.tracksCount }}</td>
+              </ng-container>
 
               <ng-container matColumnDef="lastFetch">
                 <th mat-header-cell *matHeaderCellDef>Last Fetch</th>
                 <td mat-cell *matCellDef="let element">{{ element.lastFetch | date }}</td>
               </ng-container>
 
-              <!-- <ng-container matColumnDef="lastUpdate">
-            <th mat-header-cell *matHeaderCellDef>Last Update</th>
-            <td mat-cell *matCellDef="let element">{{ element.lastUpdate | date }}</td>
-          </ng-container> -->
+              <ng-container matColumnDef="lastUpdate">
+                <th mat-header-cell *matHeaderCellDef>Last Update</th>
+                <td mat-cell *matCellDef="let element">
+                  <span *ngIf="Utils.isValidDate(element.lastUpdate); else invalid">
+                    {{ element.lastUpdate | date }}</span
+                  >
+                  <ng-template #invalid>- Unknown -</ng-template>
+                </td>
+              </ng-container>
 
               <ng-container matColumnDef="delete">
                 <th mat-header-cell style="width: 15px" *matHeaderCellDef>Delete</th>
@@ -150,34 +162,32 @@
             <th mat-header-cell *matHeaderCellDef>Name</th>
             <td mat-cell *matCellDef="let element">
               <a
-                mat-icon-button
                 target="_blank"
-                [href]="element.external_urls.spotify"
                 color="primary"
                 target="_blank"
                 rel="noopener noreferrer"
+                class="no-decoration"
+                [href]="element.external_urls.spotify"
               >
-                <mat-icon>open_in_new</mat-icon>
+                {{ element.name }}
               </a>
-              {{ element.name }}
             </td>
           </ng-container>
 
           <ng-container matColumnDef="artists">
             <th mat-header-cell *matHeaderCellDef>Author</th>
             <td mat-cell *matCellDef="let element">
-              <div *ngFor="let artist of element.artists">
+              <div class="multiple" *ngFor="let artist of element.artists">
                 <a
-                  mat-icon-button
                   target="_blank"
-                  [href]="artist.external_urls.spotify"
                   color="primary"
                   target="_blank"
                   rel="noopener noreferrer"
+                  class="no-decoration"
+                  [href]="artist.external_urls.spotify"
                 >
-                  <mat-icon>open_in_new</mat-icon>
+                  {{ artist.name }}
                 </a>
-                {{ artist.name }}
               </div>
             </td>
           </ng-container>
@@ -185,18 +195,17 @@
           <ng-container matColumnDef="featured">
             <th mat-header-cell *matHeaderCellDef>Featured on</th>
             <td mat-cell *matCellDef="let element">
-              <div *ngFor="let playlist of element.featuredOn">
+              <div class="multiple" *ngFor="let playlist of element.featuredOn">
                 <a
-                  mat-icon-button
                   target="_blank"
-                  [href]="playlist.playlistUrl"
                   color="primary"
                   target="_blank"
                   rel="noopener noreferrer"
+                  class="no-decoration"
+                  [href]="playlist.playlistUrl"
                 >
-                  <mat-icon>open_in_new</mat-icon>
+                  {{ playlist.name }}
                 </a>
-                {{ playlist.name }}
               </div>
             </td>
           </ng-container>

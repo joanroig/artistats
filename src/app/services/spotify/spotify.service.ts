@@ -46,9 +46,11 @@ export class SpotifyService {
     this.errorLogNotifier.next(log);
   }
 
-  async insertTracks(trackIds: string[], mode: ModeType, dbId: DbId) {
+  async fetchTracks(trackIds: string[], dbId: DbId): Promise<{ updateCount: number; failed: string[] }> {
+    console.debug('fetchTracks');
     this.stop = false;
     let failed = [];
+    let updateCount = 0;
     let index = 0;
 
     for (const id of trackIds) {
@@ -71,39 +73,24 @@ export class SpotifyService {
       let prevTrack = (await this.databaseService.get(id, dbId)) as Track;
 
       // Print step
-      switch (mode) {
-        case ModeType.new:
-          this.fetchLogNotifier.next(`Processing ${index} of  ${trackIds.length} : ${id}`);
-          break;
+      this.fetchLogNotifier.next(`Processing ${index} of  ${trackIds.length} : ${id}`);
 
-        case ModeType.update:
-          if (prevTrack) {
-            this.fetchLogNotifier.next(
-              `Updating ${index} of  ${trackIds.length} : "${prevTrack.name}" by ${prevTrack.artists.join(', ')}`
-            );
-          } else {
-            this.appendErrorLog('[insertTracks] Database inconsistency! Check with the admin the id: ' + id);
-          }
-          break;
-
-        default:
-          break;
-      }
-
-      if (mode === ModeType.new) {
-        // Skip if already processed
-        if (prevTrack) {
-          this.appendErrorLog('Skipped repeated track ' + id);
-          // No need to add to the withError objects as the playlist is already processed
-          continue;
-        }
+      // Skip if already processed
+      if (prevTrack) {
+        this.appendErrorLog('Skipped repeated track ' + id);
+        // No need to add to the withError objects as the track is already processed
+        continue;
       }
 
       // Fetch data
       await this.spotifyApi.getTrack(id).then(
         async (data) => {
-          let track: Track = { ...data, featuredOn: [] };
+          // Get size to set the position
+          let count = (await this.databaseService.getCount(dbId)) + 1;
+
+          let track: Track = { ...data, position: count, featuredOn: [] };
           await this.databaseService.setTrack(id, track, dbId);
+          updateCount++;
         },
         (error: any) => {
           this.appendErrorLog('Problem fetching track ' + id + ' - ' + error.status);
@@ -123,13 +110,15 @@ export class SpotifyService {
     }
 
     this.fetchLogNotifier.next('');
-    return failed;
+    return { updateCount, failed };
   }
 
   // Get playlist details
-  async insertPlaylists(playlistIds: string[], mode: ModeType, dbId: DbId) {
+  async fetchPlaylists(playlistIds: string[], mode: ModeType, dbId: DbId) {
+    console.debug('fetchPlaylists');
     this.stop = false;
     let failed = [];
+    let updateCount = 0;
     let index = 0;
 
     for (const id of playlistIds) {
@@ -139,13 +128,12 @@ export class SpotifyService {
       if (this.stop) {
         this.stop = false;
         // this.isLoading = false;
-        this.appendErrorLog('Stopped by the user');
+        this.appendErrorLog('> Stopped by the user');
         for (let i = index; i < playlistIds.length; i++) {
           let skipped = playlistIds[i];
           this.appendErrorLog('Skipped ' + skipped);
           failed.push(skipped);
         }
-
         break;
       }
 
@@ -211,7 +199,7 @@ export class SpotifyService {
           }
 
           // Calculate playlist last update
-          let lastUpdate = new Date('1970-01-01T01:01:01Z');
+          let lastUpdate = new Date('1970-05-05T01:01:01Z');
           tracks.forEach((track) => {
             const d = new Date(track.added_at);
             if (d > lastUpdate) {
@@ -219,9 +207,12 @@ export class SpotifyService {
             }
           });
 
+          // Get size to set the position
+          let count = await this.databaseService.getCount(dbId);
+
           const playlist: Playlist = {
             id,
-            position: prevPlaylist?.position,
+            position: prevPlaylist?.position || count, // set at same position if it's an update
             name: data.name,
             lastFetch: new Date(),
             author: data.owner.display_name,
@@ -238,6 +229,7 @@ export class SpotifyService {
           }
 
           await this.databaseService.setPlaylist(id, playlist, dbId);
+          updateCount++;
         },
         (error: any) => {
           this.appendErrorLog('Problem fetching playlist ' + id + ' - ' + error.status);
@@ -257,7 +249,7 @@ export class SpotifyService {
     }
 
     this.fetchLogNotifier.next('');
-    return failed;
+    return { updateCount, failed };
   }
 
   // Get playlist tracks page
