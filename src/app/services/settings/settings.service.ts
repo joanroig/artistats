@@ -11,8 +11,8 @@ import {
 export class SettingsService {
   constructor() {
     this.setDefaults(ANALYSIS_PLAYLISTS_SORT_REMEMBER, true);
-    this.setDefaults(ANALYSIS_PLAYLISTS_SORT_ACTIVE, 'position');
-    this.setDefaults(ANALYSIS_PLAYLISTS_SORT_DIRECTION, 'asc');
+    this.setDefaults(ANALYSIS_PLAYLISTS_SORT_ACTIVE, '');
+    this.setDefaults(ANALYSIS_PLAYLISTS_SORT_DIRECTION, '');
   }
 
   private setDefaults(key: string, value: any) {
