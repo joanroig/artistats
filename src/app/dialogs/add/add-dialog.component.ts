@@ -15,21 +15,21 @@ export class AddDialogComponent {
   @ViewChild(OutputComponent)
   output!: OutputComponent;
 
-  inputString: String = '';
+  inputString: string = '';
 
   // Load controls
-  startupLoaded = false;
   isLoading = false;
 
-  loginStatus?: boolean;
-  userData?: any;
+  // boolean to return to the caller
+  changes = false;
 
   dbId: DbId;
 
-  resourceType;
-
   // expose dbids to the template
   DbIds = DbId;
+
+  resourceType: ResourceType;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: any,
     public dialogRef: MatDialogRef<AddDialogComponent>,
@@ -54,54 +54,55 @@ export class AddDialogComponent {
   }
 
   async updatePlaylists() {
-    this.output.captureLogs();
-
     this.isLoading = true;
+    this.output.startLogSession();
 
-    // Reset ids
-    let ids: Set<string> = new Set<string>();
-
-    // Get strings line by line
+    // get strings line by line and remove empty strings
     let lines = this.inputString.replace(/\r\n/g, '\n').split('\n');
-
-    // Remove empty strings
     lines = lines.filter((n) => n);
 
-    // Get all ids from the strings
-    let res = Utils.parseSpotifyIds(lines, this.resourceType);
-    res.ids.forEach((item) => ids.add(item));
+    // get all unique ids from the strings
+    let ids: Set<string> = new Set<string>();
+    let parsed = Utils.parseSpotifyIds(lines, this.resourceType);
+    parsed.ids.forEach((item) => ids.add(item));
 
-    // Get ids with errors
-    let errorIds = res.errorsIds;
+    // get lines with errors
+    let errorLines = parsed.errorLines;
 
-    // Print errors
-    if (res.errorLog.length > 0) {
-      this.output.appendErrors(res.errorLog.join('\n'));
+    // add error logs to the output
+    if (parsed.errorLog.length > 0) {
+      this.output.appendErrors(parsed.errorLog.join('\n'));
     }
 
-    let errors: string[] = [];
+    let res;
 
-    if (this.resourceType === ResourceType.playlist) {
-      // Get data of all playlists
-      errors = await this.spotifyService.insertPlaylists(Array.from(ids.values()), ModeType.new, this.dbId);
-    } else if (this.resourceType === ResourceType.track) {
-      // Get data of all tracks
-      errors = await this.spotifyService.insertTracks(Array.from(ids.values()), ModeType.new, this.dbId);
-    }
+    // proceed if there is something to process
+    if (ids.size > 0) {
+      this.changes = true;
 
-    // Append ids with fetch errors and show them in the input
-    else
-      errors.forEach((error) => {
-        errorIds.push(`spotify:${this.resourceType}:${error}`);
+      switch (this.resourceType) {
+        case ResourceType.playlist:
+          res = await this.spotifyService.fetchPlaylists(Array.from(ids.values()), ModeType.new, this.dbId);
+          break;
+        case ResourceType.track:
+          res = await this.spotifyService.fetchTracks(Array.from(ids.values()), this.dbId);
+          break;
+      }
+
+      // append URIs with fetch errors
+      res.failed.forEach((id) => {
+        errorLines.push(`spotify:${this.resourceType}:${id}`);
       });
+    }
 
-    this.inputString = errorIds.join('\n');
+    // replace input for the failed lines and URIs
+    this.inputString = errorLines.join('\n');
 
+    this.output.stopLogSession();
     this.isLoading = false;
-    this.output.stopCapturing();
   }
 
   close(): void {
-    this.dialogRef.close();
+    this.dialogRef.close(this.changes);
   }
 }

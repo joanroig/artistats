@@ -1,6 +1,6 @@
 export interface Playlist {
   id: string;
-  position?: number;
+  position: number;
   name: string;
   lastFetch: Date;
   author?: string;

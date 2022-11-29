@@ -1,5 +1,5 @@
 import { CdkDragSortEvent, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatTable } from '@angular/material/table';
 import { OutputComponent } from '@app/@shared/output/output.component';
 import { DbId } from '@app/models/db-id.model';
@@ -9,17 +9,21 @@ import { Track } from '@app/models/track.model';
 import { DatabaseService } from '@app/services/database/database.service';
 import { DialogService } from '@app/services/dialog/dialog.service';
 import { SpotifyService } from '@app/services/spotify/spotify.service';
+import Utils from '@app/utils/Utils';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-editorials',
   templateUrl: './editorials.component.html',
   styleUrls: ['./editorials.component.scss'],
 })
-export class EditorialsComponent implements OnInit {
+export class EditorialsComponent implements OnInit, OnDestroy {
   // Load controls
   isLoading = false;
-  stop = false;
-  pauseDatabaseUpdates = false;
+  isStoppable = true;
+
+  pausePlaylistUpdates = false;
+  pauseTrackUpdates = false;
 
   withErrors: string[] = [];
 
@@ -29,9 +33,9 @@ export class EditorialsComponent implements OnInit {
     'name',
     'author',
     'followers',
-    // 'tracks',
+    'tracks',
     'lastFetch',
-    // 'lastUpdate',
+    'lastUpdate',
     'delete',
   ];
   trackColumns: string[] = ['reorder', 'position', 'name', 'artists', 'featured', 'delete'];
@@ -47,77 +51,74 @@ export class EditorialsComponent implements OnInit {
   @ViewChild(OutputComponent)
   output!: OutputComponent;
 
+  playlistUpdates: Subscription;
+  trackUpdates: Subscription;
+
+  // expose utils to the template
+  Utils = Utils;
+
   constructor(
     private databaseService: DatabaseService,
     private dialogService: DialogService,
     private spotifyService: SpotifyService
-  ) {}
-
-  ngOnInit() {
-    this.databaseService.getUpdates(DbId.editorials_playlists).subscribe((_) => {
-      if (!this.pauseDatabaseUpdates) {
-        this.syncPlaylists();
+  ) {
+    this.playlistUpdates = this.databaseService.getUpdates(DbId.editorials_playlists).subscribe(async (_) => {
+      if (!this.pausePlaylistUpdates) {
+        await this.syncPlaylists();
+        await this.updatePlaylistPositions();
       }
     });
-    this.databaseService.getUpdates(DbId.editorials_tracks).subscribe((_) => {
-      if (!this.pauseDatabaseUpdates) {
-        this.syncTracks();
+    this.trackUpdates = this.databaseService.getUpdates(DbId.editorials_tracks).subscribe(async (_) => {
+      if (!this.pauseTrackUpdates) {
+        await this.syncTracks();
+        await this.updateTrackPositions();
       }
     });
   }
 
+  ngOnInit() {
+    // first load
+    this.syncPlaylists();
+    this.syncTracks();
+  }
+
+  ngOnDestroy(): void {
+    this.playlistUpdates.unsubscribe();
+    this.trackUpdates.unsubscribe();
+  }
+
   addPlaylists() {
-    this.dialogService.openAddDialog(DbId.editorials_playlists).subscribe((_) => {
-      // this.sync();
+    this.dialogService.openAddDialog(DbId.editorials_playlists).subscribe((changes) => {
+      // Process matches after the dialog is closed
+      if (changes) {
+        this.processMatches();
+      }
     });
   }
 
   addTracks() {
-    this.dialogService.openAddDialog(DbId.editorials_tracks).subscribe((_) => {
-      // this.sync();
-    });
-  }
-
-  // Synchronize with the database
-  private syncPlaylists() {
-    this.databaseService.getAllPlaylists(DbId.editorials_playlists).then((res) => {
-      // Sort by stored position attribute
-      res.sort((a, b) => {
-        if (a.position === undefined) return 1;
-        if (b.position === undefined) return -1;
-        return a.position - b.position;
-      });
-
-      this.playlists = res;
-      this.processMatches();
-    });
-  }
-
-  // Synchronize with the database
-  private syncTracks() {
-    this.databaseService.getAllTracks(DbId.editorials_tracks).then((res) => {
-      // Sort by stored position attribute
-      res.sort((a, b) => {
-        if (a.position === undefined) return 1;
-        if (b.position === undefined) return -1;
-        return a.position - b.position;
-      });
-
-      this.tracks = res;
-      this.processMatches();
+    this.dialogService.openAddDialog(DbId.editorials_tracks).subscribe((changes) => {
+      // Process matches after the dialog is closed
+      if (changes) {
+        this.processMatches();
+      }
     });
   }
 
   // find all featured tracks
   async processMatches() {
-    this.pauseDatabaseUpdates = true;
+    this.isLoading = true;
+    this.isStoppable = false;
+    this.pausePlaylistUpdates = true;
+    this.pauseTrackUpdates = true;
+    this.output.setLog('Processing matches...');
 
     let temp = this.tracks.map((x) => Object.assign({}, x));
 
     for (let track of temp) {
       track.featuredOn = [];
       for (let playlist of this.playlists) {
-        let match = playlist.tracks?.find((tr) => tr.track.id === track.id);
+        let match = playlist.tracks?.find((tr) => tr.track?.id === track.id);
 
         if (match) {
           track.featuredOn.push(playlist);
@@ -128,36 +129,59 @@ export class EditorialsComponent implements OnInit {
 
     this.tracks = temp;
 
-    this.tracksTable.renderRows();
+    // this.tracksTable.renderRows();
 
-    this.pauseDatabaseUpdates = false;
-
-    // this.syncTracks();
+    this.output.clearLog();
+    this.pausePlaylistUpdates = false;
+    this.pauseTrackUpdates = false;
+    this.isStoppable = true;
+    this.isLoading = false;
   }
 
   stopUpdate() {
     this.spotifyService.stopUpdate();
   }
 
-  deletePlaylist(playlist: Playlist) {
-    this.databaseService.delete(playlist.id, DbId.editorials_playlists).then((_) => {
-      this.syncPlaylists();
-    });
+  async deletePlaylist(playlist: Playlist) {
+    await this.databaseService.delete(playlist.id, DbId.editorials_playlists);
   }
 
-  deleteTrack(track: Track) {
-    this.databaseService.delete(track.id, DbId.editorials_tracks).then((_) => {
-      this.syncTracks();
-    });
+  async deleteTrack(track: Track) {
+    await this.databaseService.delete(track.id, DbId.editorials_tracks);
+  }
+
+  async refresh() {
+    this.isLoading = true;
+    this.output.startLogSession();
+
+    let keys = await this.databaseService.getAllKeys(DbId.editorials_playlists);
+    let res = await this.spotifyService.fetchPlaylists(keys, ModeType.update, DbId.editorials_playlists);
+
+    this.withErrors.push(...res.failed);
+
+    await this.processMatches();
+
+    this.isLoading = false;
+    this.output.stopLogSession();
   }
 
   async reorderPlaylists(event: CdkDragSortEvent) {
     const prevIndex = this.playlists.findIndex((d) => d === event.item.data);
     moveItemInArray(this.playlists, prevIndex, event.currentIndex);
     this.playlistsTable.renderRows();
+    await this.updatePlaylistPositions();
+  }
 
+  async reorderTracks(event: CdkDragSortEvent) {
+    const prevIndex = this.tracks.findIndex((d) => d === event.item.data);
+    moveItemInArray(this.tracks, prevIndex, event.currentIndex);
+    this.tracksTable.renderRows();
+    await this.updateTrackPositions();
+  }
+
+  private async updatePlaylistPositions() {
     // Update database, be sure to unsubscribe to changes to prevent refreshing data while updating
-    this.pauseDatabaseUpdates = true;
+    this.pausePlaylistUpdates = true;
 
     let index = 0;
     for (var playlist of this.playlists) {
@@ -165,40 +189,44 @@ export class EditorialsComponent implements OnInit {
       await this.databaseService.setPlaylist(playlist.id, playlist, DbId.editorials_playlists);
       index++;
     }
-
-    this.pauseDatabaseUpdates = false;
+    this.pausePlaylistUpdates = false;
   }
 
-  async reorderTracks(event: CdkDragSortEvent) {
-    const prevIndex = this.tracks.findIndex((d) => d === event.item.data);
-    moveItemInArray(this.tracks, prevIndex, event.currentIndex);
-    this.tracksTable.renderRows();
-
+  private async updateTrackPositions() {
     // Update database, be sure to unsubscribe to changes to prevent refreshing data while updating
-    this.pauseDatabaseUpdates = true;
+    this.pauseTrackUpdates = true;
 
     let index = 0;
-    for (var track of this.tracks) {
+    for (let track of this.tracks) {
       track.position = index;
       await this.databaseService.setTrack(track.id, track, DbId.editorials_tracks);
       index++;
     }
 
-    this.pauseDatabaseUpdates = false;
+    this.pauseTrackUpdates = false;
   }
 
-  async updatePlaylists() {
-    this.isLoading = true;
-    this.output.captureLogs();
+  // Synchronize with the database
+  private async syncPlaylists() {
+    await this.databaseService.getAllPlaylists(DbId.editorials_playlists).then((res) => {
+      // Sort by stored position attribute
+      res.sort((a, b) => {
+        return a.position - b.position;
+      });
 
-    let keys = await this.databaseService.getAllKeys(DbId.editorials_playlists);
-    let failed = await this.spotifyService.insertPlaylists(keys, ModeType.update, DbId.editorials_playlists);
+      this.playlists = res;
+    });
+  }
 
-    this.withErrors.push(...failed);
+  // Synchronize with the database
+  private async syncTracks() {
+    await this.databaseService.getAllTracks(DbId.editorials_tracks).then((res) => {
+      // Sort by stored position attribute
+      res.sort((a, b) => {
+        return a.position - b.position;
+      });
 
-    await this.processMatches();
-
-    this.isLoading = false;
-    this.output.stopCapturing();
+      this.tracks = res;
+    });
   }
 }
