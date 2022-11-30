@@ -10,4 +10,7 @@ export interface Playlist {
   tracks?: SpotifyApi.PlaylistTrackObject[];
   tracksCount?: number;
   lastUpdate?: Date;
+  // only used for editorials, position of the track
+  trackAddedAt?: Date;
+  trackPosition?: number;
 }

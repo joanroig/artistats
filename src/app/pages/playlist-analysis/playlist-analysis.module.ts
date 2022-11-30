@@ -8,6 +8,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { MaterialModule } from '@app/material.module';
 import { SharedModule } from '@shared';
+import { MatTableExporterModule } from 'mat-table-exporter';
 import { PlaylistAnalysisRoutingModule } from './playlist-analysis-routing.module';
 import { PlaylistAnalysisComponent } from './playlist-analysis.component';
 
@@ -21,6 +22,7 @@ import { PlaylistAnalysisComponent } from './playlist-analysis.component';
     FormsModule,
     Angulartics2Module,
     DragDropModule,
+    MatTableExporterModule,
     PlaylistAnalysisRoutingModule,
   ],
   declarations: [PlaylistAnalysisComponent],

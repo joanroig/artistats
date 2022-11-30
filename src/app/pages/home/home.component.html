@@ -2,17 +2,18 @@
   <mat-card>
     <mat-card-content>
       <mat-card-actions>
-        <div *ngIf="loginStatus === true && userData">
+        <div *ngIf="loginStatus === true && userData; else notLoggedIn">
           <div class="card">
-            <img class="image" alt="profile image" [src]="userData?.images[0].url" />
+            <img class="image" alt="profile image" *ngIf="userData?.images" [src]="userData?.images[0].url" />
             <div>
               <div class="name">
-                <a [href]="userData?.href">{{ userData?.display_name }}</a>
+                <a class="no-decoration" [href]="userData?.href">{{ userData?.display_name }}</a>
               </div>
-              <div class="followers">Followers:{{ userData?.followers.total }}</div>
+              <div class="followers">Followers:{{ userData?.followers?.total }}</div>
             </div>
           </div>
         </div>
+        <ng-template #notLoggedIn> <h1>Please refresh the token</h1></ng-template>
       </mat-card-actions>
     </mat-card-content>
   </mat-card>

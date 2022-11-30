@@ -118,11 +118,15 @@ export class EditorialsComponent implements OnInit, OnDestroy {
     for (let track of temp) {
       track.featuredOn = [];
       for (let playlist of this.playlists) {
-        let match = playlist.tracks?.find((tr) => tr.track?.id === track.id);
+        if (playlist.tracks) {
+          let matchIndex = playlist.tracks.findIndex((tr) => tr.track?.id === track.id);
 
-        if (match) {
-          track.featuredOn.push(playlist);
-          await this.databaseService.setTrack(track.id, track, DbId.editorials_tracks);
+          if (matchIndex && matchIndex !== -1) {
+            playlist.trackAddedAt = new Date(playlist.tracks[matchIndex].added_at);
+            playlist.trackPosition = matchIndex + 1;
+            track.featuredOn.push(playlist);
+            await this.databaseService.setTrack(track.id, track, DbId.editorials_tracks);
+          }
         }
       }
     }
@@ -139,6 +143,7 @@ export class EditorialsComponent implements OnInit, OnDestroy {
   }
 
   stopUpdate() {
+    this.isStoppable = false;
     this.spotifyService.stopUpdate();
   }
 
@@ -184,7 +189,7 @@ export class EditorialsComponent implements OnInit, OnDestroy {
     this.pausePlaylistUpdates = true;
 
     let index = 0;
-    for (var playlist of this.playlists) {
+    for (let playlist of this.playlists) {
       playlist.position = index;
       await this.databaseService.setPlaylist(playlist.id, playlist, DbId.editorials_playlists);
       index++;

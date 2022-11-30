@@ -47,6 +47,7 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
     'position',
     'name',
     'author',
+    // 'playlistUrl',
     'followersCount',
     'tracksCount',
     // 'lastFetch',
@@ -94,12 +95,16 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
     this.playlists.sort = this.sort;
 
     this.playlists.sortingDataAccessor = (data: any, sortHeaderId: string): string => {
-      // put names with special characters at the top by adding a _ prefix
       if (sortHeaderId === 'name' || sortHeaderId === 'author') {
-        var searchPattern = new RegExp('^[^a-zA-Z0-9]');
-        if (searchPattern.test(data[sortHeaderId])) {
-          return '_' + data[sortHeaderId];
+        // remove blanks and compare strings in lowercase
+        let val = data[sortHeaderId].toLocaleLowerCase().trim();
+
+        // put names with special characters at the top of the list by adding a _ prefix
+        const searchPattern = new RegExp(/^[^a-zA-Z0-9]/);
+        if (searchPattern.test(val)) {
+          val = '_' + val;
         }
+        return val;
       }
       // compare strings in lowercase
       if (typeof data[sortHeaderId] === 'string') {
@@ -133,6 +138,7 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
 
   // stop the update after finishing the current iteration
   stopUpdate() {
+    this.isStoppable = false;
     this.spotifyService.stopUpdate();
   }
 

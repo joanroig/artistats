@@ -98,14 +98,14 @@
 
               <ng-container matColumnDef="lastFetch">
                 <th mat-header-cell *matHeaderCellDef>Last Fetch</th>
-                <td mat-cell *matCellDef="let element">{{ element.lastFetch | date }}</td>
+                <td mat-cell *matCellDef="let element">{{ element.lastFetch | date : 'dd/MM/yyyy' }}</td>
               </ng-container>
 
               <ng-container matColumnDef="lastUpdate">
                 <th mat-header-cell *matHeaderCellDef>Last Update</th>
                 <td mat-cell *matCellDef="let element">
                   <span *ngIf="Utils.isValidDate(element.lastUpdate); else invalid">
-                    {{ element.lastUpdate | date }}</span
+                    {{ element.lastUpdate | date : 'dd/MM/yyyy' }}</span
                   >
                   <ng-template #invalid>- Unknown -</ng-template>
                 </td>
@@ -204,7 +204,9 @@
                   class="no-decoration"
                   [href]="playlist.playlistUrl"
                 >
-                  {{ playlist.name }}
+                  <strong> {{ playlist.name }}</strong> (<strong>#{{ playlist.trackPosition }}</strong> of
+                  {{ playlist.tracksCount }})
+                  <i style="opacity: 0.5"> - added at {{ playlist.trackAddedAt | date : 'dd/MM/yyyy HH:mm' }}</i>
                 </a>
               </div>
             </td>

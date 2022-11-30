@@ -1,6 +1,11 @@
 import { ResourceType } from '@app/models/resource-type.model';
+import * as moment from 'moment';
 
 export default class Utils {
+  static now() {
+    return moment().format('DD-MM-YYYY');
+  }
+
   static isValidDate(date: Date) {
     if (date.getFullYear() > 1980) {
       return true;
