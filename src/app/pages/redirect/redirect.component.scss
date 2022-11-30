@@ -1,21 +1,23 @@
+@import "/src/theme/theme-variables.scss";
 :host {
+  background-color: rgba(0, 0, 0, 0.05);
   display: block;
   flex: 1;
 }
 
 .main {
   background-color: #ffffff;
-  width: 400px;
+  width: 300px;
   // height: 400px;
   margin: 7em auto;
   border-radius: 1.5em;
   box-shadow: 0px 11px 35px 2px rgba(0, 0, 0, 0.14);
 }
 
-.sign {
+.text {
   padding-top: 40px;
   padding-bottom: 40px;
-  color: #8c55aa;
+  color: mat-color($app-primary);
   font-family: "Ubuntu", sans-serif;
   font-weight: bold;
   font-size: 23px;

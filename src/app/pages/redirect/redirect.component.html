@@ -1,3 +1,7 @@
 <div class="main">
-  <p class="sign" align="center">Logged in! Closing popup...</p>
+  <p class="text" align="center">
+    Logged in! <br />
+    Closing popup in {{ count }}...<br /><br />
+    <app-loader class="inline-loader" [isLoading]="true"></app-loader>
+  </p>
 </div>

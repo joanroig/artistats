@@ -11,6 +11,7 @@ const log = new Logger('Redirect');
   styleUrls: ['./redirect.component.scss'],
 })
 export class RedirectComponent implements OnInit {
+  count = 2;
   constructor() {}
 
   // https://developer.spotify.com/documentation/general/guides/authorization/implicit-grant/
@@ -22,8 +23,18 @@ export class RedirectComponent implements OnInit {
     localStorage.removeItem('accessToken');
     localStorage.setItem('accessToken', spotifyAccessToken);
 
-    setTimeout(function () {
-      window.close();
-    }, 1000);
+    this.countdown();
+  }
+
+  async countdown() {
+    for (let i = 0; i < 2; i++) {
+      await this.wait1s();
+      this.count--;
+    }
+    window.close();
+  }
+
+  wait1s() {
+    return new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }

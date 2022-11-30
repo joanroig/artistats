@@ -54,21 +54,20 @@ export class SpotifyService {
     let index = 0;
 
     for (const id of trackIds) {
-      index++;
-
       // Stop if requested
       if (this.stop) {
         this.stop = false;
         // this.isLoading = false;
-        this.appendErrorLog('Stopped by the user');
+        this.appendErrorLog('> Stopped');
         for (let i = index; i < trackIds.length; i++) {
           let skipped = trackIds[i];
           this.appendErrorLog('Skipped ' + skipped);
           failed.push(skipped);
         }
-
         break;
       }
+
+      index++;
 
       let prevTrack = (await this.databaseService.get(id, dbId)) as Track;
 
@@ -122,13 +121,11 @@ export class SpotifyService {
     let index = 0;
 
     for (const id of playlistIds) {
-      index++;
-
       // Stop if requested
       if (this.stop) {
         this.stop = false;
         // this.isLoading = false;
-        this.appendErrorLog('> Stopped by the user');
+        this.appendErrorLog('> Stopped');
         for (let i = index; i < playlistIds.length; i++) {
           let skipped = playlistIds[i];
           this.appendErrorLog('Skipped ' + skipped);
@@ -136,6 +133,8 @@ export class SpotifyService {
         }
         break;
       }
+
+      index++;
 
       let prevPlaylist = (await this.databaseService.get(id, dbId)) as Playlist;
 
@@ -235,11 +234,10 @@ export class SpotifyService {
           this.appendErrorLog('Problem fetching playlist ' + id + ' - ' + error.status);
           failed.push(id);
           if (error.status === 401) {
-            if (error.status === 401) {
-              this.snackBar.open('Token expired, go to user menu and press "Refresh token"', 'OK', {
-                duration: 5000,
-              });
-            }
+            this.snackBar.open('Token expired, go to user menu and press "Refresh token"', 'OK', {
+              duration: 5000,
+            });
+            this.stop = true;
           }
         }
       );
