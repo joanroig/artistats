@@ -1,8 +1,5 @@
-import { Clipboard } from '@angular/cdk/clipboard';
 import { CdkDragSortEvent, moveItemInArray } from '@angular/cdk/drag-drop';
-import { DatePipe } from '@angular/common';
 import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, Sort, SortDirection } from '@angular/material/sort';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { OutputComponent } from '@app/@shared/output/output.component';
@@ -47,9 +44,9 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
     'position',
     'name',
     'author',
-    // 'playlistUrl',
     'followersCount',
     'tracksCount',
+    'playlistUrl',
     // 'lastFetch',
     'lastUpdate',
     'delete',
@@ -75,9 +72,6 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
   }
 
   constructor(
-    private clipboard: Clipboard,
-    private datePipe: DatePipe,
-    private snackBar: MatSnackBar,
     private databaseService: DatabaseService,
     private dialogService: DialogService,
     private spotifyService: SpotifyService,
@@ -93,26 +87,7 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     this.playlists.sort = this.sort;
-
-    this.playlists.sortingDataAccessor = (data: any, sortHeaderId: string): string => {
-      if (sortHeaderId === 'name' || sortHeaderId === 'author') {
-        // remove blanks and compare strings in lowercase
-        let val = data[sortHeaderId].toLocaleLowerCase().trim();
-
-        // put names with special characters at the top of the list by adding a _ prefix
-        const searchPattern = new RegExp(/^[^a-zA-Z0-9]/);
-        if (searchPattern.test(val)) {
-          val = '_' + val;
-        }
-        return val;
-      }
-      // compare strings in lowercase
-      if (typeof data[sortHeaderId] === 'string') {
-        return data[sortHeaderId].toLocaleLowerCase();
-      }
-
-      return data[sortHeaderId];
-    };
+    this.playlists.sortData = this.customSort();
   }
 
   ngOnInit() {
@@ -142,28 +117,6 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
     this.spotifyService.stopUpdate();
   }
 
-  // copy data to the clipboard
-  copyToClipboard(type: ClipboardType) {
-    let data = '';
-    // get data filtered and sorted
-    switch (type) {
-      case ClipboardType.dates:
-        this.playlists.sortData(this.playlists.filteredData, this.sort).forEach((p) => {
-          data += this.datePipe.transform(p.lastUpdate, 'dd/MM/yyyy') + '\n';
-        });
-        break;
-      case ClipboardType.followers:
-        this.playlists.sortData(this.playlists.filteredData, this.sort).forEach((p) => {
-          data += p.followersCount + '\n';
-        });
-        break;
-    }
-    this.clipboard.copy(data);
-    this.snackBar.open('Data copied to the clipboard!', 'Close', {
-      duration: 1000,
-    });
-  }
-
   async openAddDialog() {
     // listen to database updates
     let playlistUpdates = this.databaseService.getUpdates(DbId.analysis_playlists).subscribe(async (_) => {
@@ -191,6 +144,37 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
     // save sort settings
     this.settingsService.setSetting(ANALYSIS_PLAYLISTS_SORT_ACTIVE, sortState.active);
     this.settingsService.setSetting(ANALYSIS_PLAYLISTS_SORT_DIRECTION, sortState.direction);
+  }
+
+  // custom sort function
+  customSort() {
+    let sortFunction = (items: Playlist[], sort: MatSort): Playlist[] => {
+      if (!sort.active || sort.direction === '') {
+        return items;
+      }
+      return items.sort((a: Playlist, b: Playlist) => {
+        let comparatorResult = 0;
+        switch (sort.active) {
+          // compare strings with localCompare
+          case 'name':
+          case 'author':
+            // trim the strings to remove trailing blanks
+            let aVal = a[sort.active]?.trim();
+            let bVal = b[sort.active]?.trim();
+            // compare against an empty string if the values are undefined
+            aVal = aVal ? aVal : '';
+            bVal = bVal ? bVal : '';
+            comparatorResult = aVal.localeCompare(bVal);
+            break;
+          // compare numeric or date values
+          default:
+            comparatorResult = a[sort.active] < b[sort.active] ? 1 : -1;
+            break;
+        }
+        return comparatorResult * (sort.direction == 'asc' ? 1 : -1);
+      });
+    };
+    return sortFunction;
   }
 
   async reorderTable(event: CdkDragSortEvent) {

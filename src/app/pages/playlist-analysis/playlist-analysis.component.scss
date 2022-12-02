@@ -18,3 +18,8 @@ table {
     margin: 4px !important;
   }
 }
+
+// hide column visually but keep it in the DOM to be exported
+.mat-column-playlistUrl {
+  display: none;
+}
