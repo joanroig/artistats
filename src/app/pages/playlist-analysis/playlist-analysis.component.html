@@ -57,7 +57,7 @@
           [matSortDirection]="matSortDirection"
           matTableExporter
           #exporter="matTableExporter"
-          [hiddenColumns]="[0, 7]"
+          [hiddenColumns]="[0, 1, 3, 5, 8]"
           class="mat-elevation-z1"
         >
           <!--- Note that these columns can be defined in any order.
@@ -78,7 +78,7 @@
           </ng-container>
 
           <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Playlist Name</th>
             <td mat-cell *matCellDef="let element">
               <a
                 target="_blank"
@@ -87,7 +87,7 @@
                 rel="noopener noreferrer"
                 class="no-decoration"
                 [href]="element.playlistUrl"
-                >{{ element.name }}</a
+                >{{ element.name ? element.name : '# MISSING NAME #' }}</a
               >
             </td>
           </ng-container>
@@ -102,15 +102,10 @@
                 rel="noopener noreferrer"
                 class="no-decoration"
                 [href]="element.authorUrl"
-                >{{ element.author }}
+                >{{ element.author ? element.author : '# MISSING AUTHOR #' }}
               </a>
             </td>
           </ng-container>
-
-          <!-- <ng-container matColumnDef="playlistUrl">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Url</th>
-            <td mat-cell *matCellDef="let element">{{ element.playlistUrl }}</td>
-          </ng-container> -->
 
           <ng-container matColumnDef="followersCount">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Followers</th>
@@ -120,6 +115,11 @@
           <ng-container matColumnDef="tracksCount">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Tracks</th>
             <td mat-cell *matCellDef="let element">{{ element.tracksCount }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="playlistUrl">
+            <th mat-header-cell *matHeaderCellDef>Spotify URL</th>
+            <td mat-cell *matCellDef="let element">{{ element.playlistUrl }}</td>
           </ng-container>
 
           <!-- <ng-container matColumnDef="lastFetch">
