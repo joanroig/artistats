@@ -52,6 +52,11 @@ export class DatabaseService {
     this.getNotifier(dbId).next(true);
   }
 
+  async clearDb(dbId: DbId) {
+    await this.getStore(dbId).clear();
+    console.debug('clearDb');
+  }
+
   async getCount(dbId: DbId): Promise<number> {
     return this.getStore(dbId).length();
   }

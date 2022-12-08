@@ -1,0 +1,34 @@
+<h1 mat-dialog-title>Settings</h1>
+<mat-dialog-content>
+  Press a button to delete a database (this cannot be undone!):
+  <div class="button-block">
+    <button
+      mat-raised-button
+      color="warn"
+      [disabled]="pressed.has(DbIds.analysis_playlists)"
+      (click)="delete(DbIds.analysis_playlists)"
+    >
+      <strong>Playlist Analysis</strong>
+    </button>
+    <button
+      mat-raised-button
+      color="warn"
+      [disabled]="pressed.has(DbIds.editorials_playlists)"
+      (click)="delete(DbIds.editorials_playlists)"
+    >
+      <strong>Editorials (Playlists)</strong>
+    </button>
+    <button
+      mat-raised-button
+      color="warn"
+      [disabled]="pressed.has(DbIds.editorials_tracks)"
+      (click)="delete(DbIds.editorials_tracks)"
+    >
+      <strong>Editorials (Tracks)</strong>
+    </button>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button *ngIf="!needsRefresh; else refreshButton" mat-raised-button (click)="close()">Close</button>
+  <ng-template #refreshButton> <button mat-raised-button (click)="refresh()">Refresh</button></ng-template>
+</mat-dialog-actions>
