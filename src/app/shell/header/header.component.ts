@@ -4,6 +4,7 @@ import { Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
 import { AuthenticationService } from '@app/auth';
+import { DialogService } from '@app/services/dialog/dialog.service';
 
 @Component({
   selector: 'app-header',
@@ -17,7 +18,8 @@ export class HeaderComponent implements OnInit {
   constructor(
     private router: Router,
     private titleService: Title,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private dialogService: DialogService
   ) {}
 
   ngOnInit() {
@@ -28,6 +30,10 @@ export class HeaderComponent implements OnInit {
 
   refresh() {
     this.authenticationService.login();
+  }
+
+  settings() {
+    this.dialogService.openSettingsDialog();
   }
 
   logout() {

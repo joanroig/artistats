@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { AddDialogComponent } from '@app/dialogs/add/add-dialog.component';
+import { SettingsDialogComponent } from '@app/dialogs/settings/settings-dialog.component';
 import { DbId } from '@app/models/db-id.model';
 import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -14,12 +15,22 @@ import { take } from 'rxjs/operators';
 export class DialogService {
   constructor(private dialog: MatDialog) {}
 
+  openSettingsDialog(): Observable<any> {
+    const dialogConfig = new MatDialogConfig();
+
+    dialogConfig.disableClose = true;
+    dialogConfig.autoFocus = false;
+    dialogConfig.maxWidth = '800px';
+
+    let dialogRef = this.dialog.open(SettingsDialogComponent, dialogConfig);
+    return dialogRef.afterClosed().pipe(take(1));
+  }
+
   openAddDialog(dbId: DbId): Observable<any> {
     const dialogConfig = new MatDialogConfig();
 
     dialogConfig.disableClose = true;
-    dialogConfig.autoFocus = true;
-    // dialogConfig.height = '400px';
+    dialogConfig.autoFocus = false;
     dialogConfig.maxWidth = '800px';
     dialogConfig.data = {
       dbId,

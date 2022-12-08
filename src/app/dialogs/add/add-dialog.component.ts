@@ -31,8 +31,8 @@ export class AddDialogComponent {
   resourceType: ResourceType;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: any,
-    public dialogRef: MatDialogRef<AddDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) private data: any,
+    private dialogRef: MatDialogRef<AddDialogComponent>,
     private spotifyService: SpotifyService
   ) {
     this.dbId = this.data.dbId;

@@ -13,6 +13,7 @@ import { Angulartics2Module } from 'angulartics2';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AddDialogComponent } from './dialogs/add/add-dialog.component';
+import { SettingsDialogComponent } from './dialogs/settings/settings-dialog.component';
 import { MaterialModule } from './material.module';
 import { HomeModule } from './pages/home/home.module';
 import { ShellModule } from './shell/shell.module';
@@ -34,7 +35,7 @@ import { ShellModule } from './shell/shell.module';
     Angulartics2Module.forRoot(),
     AppRoutingModule, // must be imported as the last module as it contains the fallback route
   ],
-  declarations: [AppComponent, AddDialogComponent],
+  declarations: [AppComponent, AddDialogComponent, SettingsDialogComponent],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
