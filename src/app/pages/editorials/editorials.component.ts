@@ -66,6 +66,7 @@ export class EditorialsComponent implements OnInit, OnDestroy {
       if (!this.pausePlaylistUpdates) {
         await this.syncPlaylists();
         await this.updatePlaylistPositions();
+        // await this.processMatches();
       }
     });
     this.trackUpdates = this.databaseService.getUpdates(DbId.editorials_tracks).subscribe(async (_) => {
@@ -113,27 +114,22 @@ export class EditorialsComponent implements OnInit, OnDestroy {
     this.pauseTrackUpdates = true;
     this.output.setLog('Processing matches...');
 
-    let temp = this.tracks.map((x) => Object.assign({}, x));
-
-    for (let track of temp) {
+    for (let track of this.tracks) {
       track.featuredOn = [];
       for (let playlist of this.playlists) {
         if (playlist.tracks) {
           let matchIndex = playlist.tracks.findIndex((tr) => tr.track?.id === track.id);
-
-          if (matchIndex && matchIndex !== -1) {
-            playlist.trackAddedAt = new Date(playlist.tracks[matchIndex].added_at);
-            playlist.trackPosition = matchIndex + 1;
-            track.featuredOn.push(playlist);
+          if (matchIndex >= 0) {
+            // clone the object before modifying it (note that deeply-nested object are not cloned, just referenced, like playlist.tracks)
+            let featPlaylist = { ...playlist };
+            featPlaylist.trackAddedAt = new Date(playlist.tracks[matchIndex].added_at);
+            featPlaylist.trackPosition = matchIndex + 1;
+            track.featuredOn.push(featPlaylist);
             await this.databaseService.setTrack(track.id, track, DbId.editorials_tracks);
           }
         }
       }
     }
-
-    this.tracks = temp;
-
-    // this.tracksTable.renderRows();
 
     this.output.clearLog();
     this.pausePlaylistUpdates = false;

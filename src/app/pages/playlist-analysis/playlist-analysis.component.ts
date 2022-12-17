@@ -196,7 +196,7 @@ export class PlaylistAnalysisComponent implements OnInit, AfterViewInit {
     });
 
     // table update
-    this.playlists.data = this.playlists.data;
+    this.playlists.data = { ...this.playlists.data };
 
     // update database
     for (let playlist of this.playlists.data) {
