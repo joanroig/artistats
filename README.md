@@ -4,7 +4,7 @@ This little project allows you to track playlist growth and detect editorial pla
 
 It can be used to:
 
-- Quickly see at a glance if a playlist has been updated recently
+- Quickly see at a glance if playlists has been updated recently, with the option to export data to excel
 - Amount of followers and tracks that a playlist has
 - Check if a song has been featured on a playlist, when it has been added, and at which position
 
