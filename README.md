@@ -1,143 +1,98 @@
-# artistats
+# 🎹 Artistats - Spotify Artist Tools
 
-This project was generated with [ngX-Rocket](https://github.com/ngx-rocket/generator-ngx-rocket/)
-version 10.1.2
+This little project allows you to track playlist growth and detect editorial placements.
 
-# Getting started
+It can be used to:
 
-1. Go to project folder and install dependencies:
+- Quickly see at a glance if a playlist has been updated recently
+- Amount of followers and tracks that a playlist has
+- Check if a song has been featured on a playlist, when it has been added, and at which position
 
-```sh
-npm install
+New pull requests and features are welcome, but there is not plan to extend the tool for now.
+
+> :warning: **Disclaimer: _Use the Spotify For Developer tools under your own responsibility. As stated in the [license](LICENSE), I am by no means responsible for the use of this software._** _Please note that this was made for my own needs and may not fit your use case._
+
+## Example
+
+<p align="center">
+  <img src="docs/img/artistats-analysis.jpg" alt="playlist analysis" width="800px"/>
+  <br>
+  <i>Simple playlist analysis</i>
+</p>
+
+<p align="center">
+  <img src="docs/img/artistats-editorials.jpg" alt="editorials" width="800px"/>
+  <br>
+  <i>Find which songs have been featured on playlists</i>
+</p>
+
+## How to use
+
+### Request Spotify dev token
+
+Go to [Spotify for Developers](https://developer.spotify.com/dashboard) and login with the account you want to use to host the app that will receive queries from Artistats.
+
+Create a new App with this configuration to get a Client ID (you don't need to select any API):
+
+- Name and description: Artistats
+- App Status: Development mode
+- Redirect URI: https://localhost:4200/redirect
+
+<p align="center">
+  <img src="docs/img/artistats-setup-devapp.jpg" alt="editorials" width="800px"/>
+</p>
+
+Now add the Spotify accounts that will be authorized to use the app (you can add multiple accounts). If you want to use the Spotify account you used to create the app in Spotify for Developers, add it here too:
+
+<p align="center">
+  <img src="docs/img/artistats-setup-users.jpg" alt="editorials" width="800px"/>
+</p>
+
+Finally, create a `.env` file in the root folder of Artistats which contains the Client ID of your app (see the [.env.example](.env.example)):
+
+```
+SPOTIFY_CLIENT_ID='yourclientid'
 ```
 
-2. Launch development server, and open `localhost:4200` in your browser:
+### Generate localhost certificate
 
-```sh
-npm start
+To interact with Spotify we need to use https, so we need to generate a certificate for localhost.
+
+This is the working setup tested on a Windows machine (find alternatives [here](https://medium.com/@mariokandut/how-to-configure-ssl-locally-in-angular-413077568caa)):
+
+- Install choco: https://chocolatey.org/install
+- Install mkcert, install the local CA and create the certificate:
+
+```
+choco install mkcert
+mkcert -install
+mkcert localhost
 ```
 
-# Project structure
+Now copy the generated files to the root folder [certificates](certificates), it should contain two files with those exact names:
 
-```
-dist/                        web app production build
-docs/                        project docs and coding guides
-cypress/                     end-to-end tests (Cypress)
-src/                         project source code
-|- app/                      app components
-|  |- core/                  core module (singleton services and single-use components)
-|  |- shared/                shared module  (common components, directives and pipes)
-|  |- app.component.*        app root component (shell)
-|  |- app.module.ts          app root module definition
-|  |- app-routing.module.ts  app routes
-|  +- ...                    additional modules and components
-|- assets/                   app assets (images, fonts, sounds...)
-|- environments/             values for various build environments
-|- theme/                    app global scss variables and theme
-|- translations/             translations files
-|- index.html                html entry point
-|- main.scss                 global style entry point
-|- main.ts                   app entry point
-|- polyfills.ts              polyfills needed by Angular
-+- setup-jest.ts             unit tests entry point
-reports/                     test and coverage reports
-proxy.conf.js                backend proxy configuration
-```
+- certificates/localhost-key.pem
+- certificates/localhost.pem
 
-# Main tasks
+You can install the certificate to your computer or browser to prevent having warnings about connection privacy.
 
-Task automation is based on [NPM scripts](https://docs.npmjs.com/misc/scripts).
+### Install and run Artistats
 
-| Task                                            | Description                                                                                                      |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `npm start`                                     | Run development server on `http://localhost:4200/`                                                               |
-| `npm run serve:sw`                              | Run test server on `http://localhost:4200/` with service worker enabled                                          |
-| `npm run build [-- --configuration=production]` | Lint code and build web app for production (with [AOT](https://angular.io/guide/aot-compiler)) in `dist/` folder |
-| `npm test`                                      | Run unit tests via [Karma](https://karma-runner.github.io) in watch mode                                         |
-| `npm run test:ci`                               | Lint code and run unit tests once for continuous integration                                                     |
-| `npm run e2e`                                   | Run e2e tests using [Cypress](https://www.cypress.io/)                                                           |
-| `npm run lint`                                  | Lint code                                                                                                        |
-| `npm run translations:extract`                  | Extract strings from code and templates to `src/app/translations/template.json`                                  |
-| `npm run prettier`                              | Automatically format all `.ts`, `.js` & `.scss` files                                                            |
+Be sure to have [Node.js](https://nodejs.org/en/download/) installed, then:
 
-When building the application, you can specify the target configuration using the additional flag
-`--configuration <name>` (do not forget to prepend `--` to pass arguments to npm scripts).
+- [Download](https://github.com/joanroig/artistats/archive/refs/heads/main.zip) or clone the repo.
+- Run `npm install -g yarn` to install Yarn
+- Run `yarn install` in the root folder to install dependencies.
+- Run `npm run start` to start the tool, it will open automatically at https://localhost:4200/home
 
-The default build configuration is `prod`.
+You need to be logged in on https://open.spotify.com/ with the account you authorized in Spotify for Developers in order to login to Artistats.
 
-## Development server
+### Troubleshoot
 
-Run `npm start` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change
-any of the source files.
-You should not use `ng serve` directly, as it does not use the backend proxy configuration by default.
+#### Warning when opening Artistats: "Your connection is not private"
 
-## Code scaffolding
+Check if you have installed the certificate, or try other solutions provided [here](https://stackoverflow.com/questions/50534200)
 
-Run `npm run generate -- component <name>` to generate a new component. You can also use
-`npm run generate -- directive|pipe|service|class|module`.
+#### Connection error when logging in: "This site can't provide a secure connection"
 
-If you have installed [angular-cli](https://github.com/angular/angular-cli) globally with `npm install -g @angular/cli`,
-you can also use the command `ng generate` directly.
-
-## Additional tools
-
-Tasks are mostly based on the `angular-cli` tool. Use `ng help` to get more help or go check out the
-[Angular-CLI README](https://github.com/angular/angular-cli).
-
-## Code formatting
-
-All `.ts`, `.js` & `.scss` files in this project are formatted automatically using [Prettier](https://prettier.io),
-and enforced via the `test:ci` script.
-
-A pre-commit git hook has been configured on this project to automatically format staged files, using
-(pretty-quick)[https://github.com/azz/pretty-quick], so you don't have to care for it.
-
-You can also force code formatting by running the command `npm run prettier`.
-
-# What's in the box
-
-The app template is based on [HTML5](http://whatwg.org/html), [TypeScript](http://www.typescriptlang.org) and
-[Sass](http://sass-lang.com). The translation files use the common [JSON](http://www.json.org) format.
-
-#### Tools
-
-Development, build and quality processes are based on [angular-cli](https://github.com/angular/angular-cli) and
-[NPM scripts](https://docs.npmjs.com/misc/scripts), which includes:
-
-- Optimized build and bundling process with [Webpack](https://webpack.github.io)
-- [Development server](https://webpack.github.io/docs/webpack-dev-server.html) with backend proxy and live reload
-- Cross-browser CSS with [autoprefixer](https://github.com/postcss/autoprefixer) and
-  [browserslist](https://github.com/ai/browserslist)
-- Asset revisioning for [better cache management](https://webpack.github.io/docs/long-term-caching.html)
-- Unit tests using [Jasmine](http://jasmine.github.io) and [Karma](https://karma-runner.github.io)
-- End-to-end tests using [Cypress](https://www.cypress.io/)
-- Static code analysis: [TSLint](https://github.com/palantir/tslint), [Codelyzer](https://github.com/mgechev/codelyzer),
-  [Stylelint](http://stylelint.io) and [HTMLHint](http://htmlhint.com/)
-- Automatic code formatting with [Prettier](https://prettier.io)
-
-#### Libraries
-
-- [Angular](https://angular.io)
-- [Angular Material](https://material.angular.io)
-- [Angular Flex Layout](https://github.com/angular/flex-layout)
-- [Material Icons](https://material.io/icons/)
-- [RxJS](http://reactivex.io/rxjs)
-- [ngx-translate](https://github.com/ngx-translate/core)
-- [Moment.js](https://momentjs.com)
-
-#### Coding guides
-
-- [Angular](docs/coding-guides/angular.md)
-- [TypeScript](docs/coding-guides/typescript.md)
-- [Sass](docs/coding-guides/sass.md)
-- [HTML](docs/coding-guides/html.md)
-- [Unit tests](docs/coding-guides/unit-tests.md)
-- [End-to-end tests](docs/coding-guides/e2e-tests.md)
-
-#### Other documentation
-
-- [I18n guide](docs/i18n.md)
-- [Working behind a corporate proxy](docs/corporate-proxy.md)
-- [Updating dependencies and tools](docs/updating.md)
-- [Using a backend proxy for development](docs/backend-proxy.md)
-- [Browser routing](docs/routing.md)
+Check if your certificates have been generated properly and are in the right folder. If all looks fine, try clearing the browser cache and localhost data to refresh the certificate.
