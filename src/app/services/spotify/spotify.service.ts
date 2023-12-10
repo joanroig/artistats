@@ -57,7 +57,6 @@ export class SpotifyService {
       // Stop if requested
       if (this.stop) {
         this.stop = false;
-        // this.isLoading = false;
         this.appendErrorLog('> Stopped');
         for (let i = index; i < trackIds.length; i++) {
           let skipped = trackIds[i];
@@ -124,7 +123,6 @@ export class SpotifyService {
       // Stop if requested
       if (this.stop) {
         this.stop = false;
-        // this.isLoading = false;
         this.appendErrorLog('> Stopped');
         for (let i = index; i < playlistIds.length; i++) {
           let skipped = playlistIds[i];
